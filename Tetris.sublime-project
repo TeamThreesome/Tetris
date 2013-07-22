@@ -3,7 +3,7 @@
 	[
 		{
 			"path": "/Projects/Tetris",
-			"file_include_patterns": ["*.cs","*.shader","*.sublime-project"]
+			"file_include_patterns": ["*.cs","*.shader","*.gitignore","*.gitattributes","*.sublime-project"]
 		}
 	],
     "settings":
