@@ -33,6 +33,12 @@ public class GameManager : MonoBehaviour {
     static bool dropping = false;
     static bool movingLeft = false;
     static bool movingRight = false;
+
+    bool gameFinished = false;
+
+    int width = Screen.width;
+    int height = Screen.height;
+
     //Screen array for store the info of cubes
     bool[,] blocks = new bool[Xmax,Ymax];
     GameObject[,] blockObjects = new GameObject[Xmax, Ymax]; 
@@ -98,8 +104,28 @@ public class GameManager : MonoBehaviour {
     //Show score here
     void OnGUI() {
         GUI.enabled = true;
+
+        string text;
+        if(gameFinished)
+        {
+            GUILayout.BeginArea(new Rect(width/2 - 75, height/2-25, 150, 50));
+            text = "Game Finished";
+            GUILayout.Box(text);
+            if(GUILayout.Button("Start a New Game"))
+            {
+                gameFinished = false;
+                init();
+                score = 0;
+                level = 0;
+                speed = 3;
+                SpawnBlock();
+            }
+            GUILayout.EndArea();
+            return;
+        }
+        
         GUILayout.BeginArea(new Rect(10, 10, 50,50));
-        string text = "" + score;
+        text = "" + score;
         GUILayout.TextArea(text);
         GUILayout.EndArea();
     }
@@ -108,6 +134,8 @@ public class GameManager : MonoBehaviour {
         for (int i = 0; i < Xmax; i++)
             for (int j = 0; j < Ymax; j++) {
                 blocks[i, j] = false;
+                if(blockObjects[i,j]!=null)
+                    Object.Destroy(blockObjects[i,j]);
                 blockObjects[i, j] = null;
             }
     }
@@ -115,25 +143,32 @@ public class GameManager : MonoBehaviour {
     IEnumerator UpdateGame()
     {
         while (true){
-            float dropspeed;
-            if (dropping)
-                dropspeed = 0.0333f;
-            else
-                dropspeed = 1.0f / speed;
-            //dropspeed for controling the game speed
-            if (CheckCollide()) {
-                MarkCollide();
-                CheckRow();
-                SpawnBlock();
+            if(!gameFinished)
+            {
+                float dropspeed;
+                if (dropping)
+                    dropspeed = 0.0333f;
+                else
+                    dropspeed = 1.0f / speed;
+                //dropspeed for controling the game speed
+                if (CheckCollide()) {
+                    MarkCollide();
+                    CheckRow();
+                    SpawnBlock();
+                }
+                else
+                    tetris.UpdateBlock();   //Drop it
+                yield return new WaitForSeconds(dropspeed);
             }
             else
-				tetris.UpdateBlock();   //Drop it
-            yield return new WaitForSeconds(dropspeed);
+                yield return new WaitForSeconds(0.5f);
         }
     }
 
     //Here are all the controls
     void Update () {
+        if(gameFinished)
+            return;
         //Rotation
         if(Input.GetKeyDown ("space") )
             Rotate();
@@ -163,14 +198,19 @@ public class GameManager : MonoBehaviour {
     //This is for improving the control of moving left or right
     IEnumerator ImproveInput() {
         while (true) {
-            if (movingLeft || movingRight)
-                yield return new WaitForSeconds(0.1f);
+            if(!gameFinished)
+            {
+                if (movingLeft || movingRight)
+                    yield return new WaitForSeconds(0.1f);
+                else
+                    yield return new WaitForSeconds(0.5f);
+                if (movingLeft)
+                    MoveLeft();
+                if (movingRight)
+                    MoveRight();
+            }
             else
                 yield return new WaitForSeconds(0.5f);
-            if (movingLeft)
-                MoveLeft();
-            if (movingRight)
-                MoveRight();
         }
     }
 
@@ -341,6 +381,14 @@ public class GameManager : MonoBehaviour {
 		tetris.pos = startPoint;
 
 		tetris.SpawnBlock();
+        if(CheckCollide())
+        {
+            gameFinished = true;
+            foreach(GameObject obj in tetris.blockObjects)
+            {
+                Object.Destroy(obj);
+            }
+        }
         //TODO : Here is some game code
         level++;
         if (level > levelThreshold)
