@@ -4,16 +4,20 @@
 		"selected_items":
 		[
 			[
-				"game",
-				"gameFinished"
+				"blo",
+				"blockObjects	GameObject[]"
 			],
 			[
 				"sp",
-				"speedIncrement"
+				"speed"
 			],
 			[
 				"leve",
-				"levelThreshold"
+				"level"
+			],
+			[
+				"game",
+				"gameFinished"
 			],
 			[
 				"rew",
@@ -64,13 +68,10 @@
 	"buffers":
 	[
 		{
-			"contents": "//--------------------------------------------\n// Jimmy Liu\n// OWNSELF\n// 2013.6.28\n//--------------------------------------------\nusing UnityEngine;\nusing System.Collections;\nusing Object = UnityEngine.Object;\nusing Random = UnityEngine.Random;\n\n//Class for general manager of this Tetris\npublic class GameManager : MonoBehaviour {\n\n    //static variables for game play\n    static public int Xmax = 12;   //Screen size of game\n    static public int Ymax = 24;\n    public float speed = 3; //init speed\n    //These are the different rewards when player finish 1 line or 2 or 3 or 4\n    public int reward1 = 10;\n    public int reward2 = 30;\n    public int reward3 = 100;\n    public int reward4 = 500;\n    //Increase the speed when how many blocks dropped\n    public int levelThreshold = 15;\n    public float speedIncrement = 2.0f; //Speed every time increased\n\n    static int score = 0;   //Score\n    static int level = 0;   //Progress of game\n    static int typeofBlocks = 7;    //Types of blocks  ######\n    Block[] database;   //Store the basic info of blocks\n\n    //Some help static variable\n    static bool dropping = false;\n    static bool movingLeft = false;\n    static bool movingRight = false;\n\n    bool gameFinished = false;\n\n    //Screen array for store the info of cubes\n    bool[,] blocks = new bool[Xmax,Ymax];\n    GameObject[,] blockObjects = new GameObject[Xmax, Ymax]; \n	Block tetris;  //The moving one block\n    GameObject cube;    //Prefab of cube\n    Vector3 startPoint = new Vector3(Xmax/2,Ymax-1,0);  //start position\n\n	// Use this for initialization\n	void Start () {	\n        cube = (GameObject)Resources.Load(\"Cube\");\n		\n		//Initialize the type of Blocks\n        database = new Block[typeofBlocks];\n\n        database[0] = new Block();\n        database[0].size = 2;\n		database[0].blocks = new bool[2,2]{{true,true},{true,true}};\n		database[0].length = 4;\n		database[0].cube = cube;\n\n        database[1] = new Block();\n        database[1].size = 3;\n		database[1].blocks = new bool[3,3]{{false,true,false},{true,true,true},{false,false,false}};\n		database[1].length = 4;\n		database[1].cube = cube;\n\n        database[2] = new Block();\n        database[2].size = 3;\n        database[2].blocks = new bool[3, 3] { { false, false, false }, { true, true, false }, { false, true, true } };\n        database[2].length = 4;\n        database[2].cube = cube;\n\n        database[3] = new Block();\n        database[3].size = 3;\n        database[3].blocks = new bool[3, 3] { { false, false, false }, { false, true, true }, { true, true, false } };\n        database[3].length = 4;\n        database[3].cube = cube;\n\n        database[4] = new Block();\n        database[4].size = 3;\n        database[4].blocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { false, false, true } };\n        database[4].length = 4;\n        database[4].cube = cube;\n\n        database[5] = new Block();\n        database[5].size = 3;\n        database[5].blocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { true, false, false } };\n        database[5].length = 4;\n        database[5].cube = cube;\n\n        database[6] = new Block();\n        database[6].size = 4;\n        database[6].blocks = new bool[4, 4] { { false, false, false, false}, { false, false, false,false }, { true, true, true,true }, { false, false, false, false}};\n        database[6].length = 4;\n        database[6].cube = cube;\n\n        init();\n		SpawnBlock();\n        StartCoroutine(UpdateGame());\n        StartCoroutine(ImproveInput());\n	}\n\n    //Show score here\n    void OnGUI() {\n        GUI.enabled = true;\n\n        \n        GUILayout.BeginArea(new Rect(10, 10, 50,50));\n        string text = \"\" + score;\n        GUILayout.TextArea(text);\n        GUILayout.EndArea();\n    }\n    \n    void init() {\n        for (int i = 0; i < Xmax; i++)\n            for (int j = 0; j < Ymax; j++) {\n                blocks[i, j] = false;\n                blockObjects[i, j] = null;\n            }\n    }\n    //Update the block\n    IEnumerator UpdateGame()\n    {\n        while (true){\n            float dropspeed;\n            if (dropping)\n                dropspeed = 0.0333f;\n            else\n                dropspeed = 1.0f / speed;\n            //dropspeed for controling the game speed\n            if (CheckCollide()) {\n                MarkCollide();\n                CheckRow();\n                SpawnBlock();\n            }\n            else\n				tetris.UpdateBlock();   //Drop it\n            yield return new WaitForSeconds(dropspeed);\n        }\n    }\n\n    //Here are all the controls\n    void Update () {\n        //Rotation\n        if(Input.GetKeyDown (\"space\") )\n            Rotate();\n        //Moving left\n        if (Input.GetKeyDown(\"left\"))\n            MoveLeft();\n        else\n            if (Input.GetAxis(\"Horizontal\")==-1)\n                movingLeft = true;\n            else\n                movingLeft = false;\n        //Moving right\n        if (Input.GetKeyDown(\"right\"))\n            MoveRight();\n        else\n            if (Input.GetAxis(\"Horizontal\")==1)\n                movingRight = true;\n            else\n                movingRight = false;\n        //Drop the block\n        if (Input.GetKey(KeyCode.DownArrow))\n            dropping = true;\n        else\n            dropping = false;\n    }\n\n    //This is for improving the control of moving left or right\n    IEnumerator ImproveInput() {\n        while (true) {\n            if (movingLeft || movingRight)\n                yield return new WaitForSeconds(0.1f);\n            else\n                yield return new WaitForSeconds(0.5f);\n            if (movingLeft)\n                MoveLeft();\n            if (movingRight)\n                MoveRight();\n        }\n    }\n\n    //Collision\n    bool CheckCollide() {\n		for(int i=0;i<tetris.length;i++) {\n			int x = (int)tetris.blockObjects[i].transform.position.x;\n			int y = (int)tetris.blockObjects[i].transform.position.y;\n			if (y == 0)\n				return true;\n			else\n				if(blocks[x, y - 1])\n					return true;\n		}\n		return false;\n    }\n    //Apply the collision here\n    void MarkCollide() {\n		for(int i=0;i<tetris.length;i++) {\n			int x = (int)tetris.blockObjects[i].transform.position.x;\n			int y = (int)tetris.blockObjects[i].transform.position.y;\n			blocks[x, y] = true;\n        	blockObjects[x, y] = tetris.blockObjects[i];\n		}\n    }\n    //Chech if some row finished, from top to bottom\n    void CheckRow()\n    {\n        int checkedRow = 0;\n        for (int i = Ymax-1; i >=0; i--) {\n            bool RowFinished = true;\n            for (int j = 0; j < Xmax;j++ )\n                if (blocks[j, i] == false)\n                    RowFinished = false;\n            if (RowFinished) {\n                CollapsRow(i);\n                checkedRow++;\n            }//if\n        }//for\n        //Score calculate here\n        switch (checkedRow) {\n            case 1:\n                score += reward1;\n                break;\n            case 2:\n                score += reward2;\n                break;\n            case 3:\n                score += reward3;\n                break;\n            case 4:\n                score += reward4;\n                break;\n        }//switch\n    }\n\n    //when row finished\n    void CollapsRow(int row)\n    {\n        for (int i = 0; i < Xmax;i++ )\n            Object.Destroy(blockObjects[i, row]);\n        for (int j = row; j < Ymax-1;j++ )\n            for (int i = 0; i < Xmax;i++ ){\n                blocks[i, j] = blocks[i, j + 1];\n                blockObjects[i, j] = blockObjects[i, j + 1];\n                if (blockObjects[i, j] != null) {\n                    Vector3 pos = blockObjects[i, j].transform.position;\n                    blockObjects[i, j].transform.position = new Vector3(pos.x, pos.y - 1, pos.z);\n                }\n            }//for i\n    }\n\n    bool MoveLeft()\n    {\n		bool move = true;\n		for(int i=0;i<tetris.length;i++) {\n			Vector3 pos = tetris.blockObjects[i].transform.position;\n			if (tetris.blockObjects[i].transform.position.x <= 0 || blocks[((int)pos.x-1),(int)pos.y]==true)\n	        {\n				move = false;\n				break;\n			}\n		}\n		if(move)\n		{\n			for(int i=0;i<tetris.length;i++)\n			{\n				Vector3 pos = tetris.blockObjects[i].transform.position;\n				tetris.blockObjects[i].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);\n			}\n			tetris.pos = new Vector3(tetris.pos.x-1,tetris.pos.y,0);\n		}\n        return move;\n    }\n    \n    bool MoveRight()\n    {\n		bool move = true;\n		for(int i=0;i<tetris.length;i++)\n		{\n			Vector3 pos = tetris.blockObjects[i].transform.position;\n			if (tetris.blockObjects[i].transform.position.x >= Xmax-1 || blocks[((int)pos.x+1),(int)pos.y]==true)\n			{\n				move = false;\n				break;\n			}\n		}\n		if(move)\n		{\n			for(int i=0;i<tetris.length;i++)\n			{\n				Vector3 pos = tetris.blockObjects[i].transform.position;\n				tetris.blockObjects[i].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);\n			}\n			tetris.pos = new Vector3(tetris.pos.x+1,tetris.pos.y,0);\n		}\n        return move;\n    }\n	\n	void Rotate()\n	{\n        bool doRotate = true;\n        int nLeft = 0;\n        int nRight = 0;\n        //We need to check if it can be rotated first\n        for (int i=0;i<tetris.size;i++)\n            for (int j = 0; j < tetris.size;j++ ) {\n                while(tetris.pos.x<0)\n                    if(!MoveRight()) {\n                        doRotate = false;\n                        break;\n                    }\n                    else\n                        nRight++;\n                while(tetris.pos.x+tetris.size>Xmax)\n                    if(!MoveLeft()){\n                        doRotate = false;\n                        break;\n                    }\n                    else\n                        nLeft++;\n                if (!doRotate || tetris.pos.y-tetris.size<=0 ||blocks[(int)tetris.pos.x+i,(int)tetris.pos.y-j])\n                    doRotate = false;\n            }\n        if (doRotate)\n            tetris.Rotate();\n        else {  //if it can't rotate, then move back\n            while(nLeft>0) {\n                MoveRight();\n                nLeft--;\n            }\n            while(nRight>0) {\n                MoveLeft();\n                nRight--;\n            }\n        }\n	}\n\n    void SpawnBlock()\n    {\n        //Get a random block\n        int index = (int)Random.Range(0,typeofBlocks);\n        tetris = new Block();\n        tetris.size = database[index].size;\n		tetris.blocks = database[index].blocks;\n		tetris.length = database[index].length;\n		tetris.cube = cube;\n		tetris.pos = startPoint;\n\n		tetris.SpawnBlock();\n        if(CheckCollide())\n            gameFinished = true;\n        //TODO : Here is some game code\n        level++;\n        if (level > levelThreshold)\n        {\n            speed += speedIncrement;\n            level = 0;\n        }\n    }\n}",
 			"file": "Assets/Script/GameManager.cs",
-			"file_size": 10714,
-			"file_write_time": 1375625010000000,
 			"settings":
 			{
-				"buffer_size": 10724,
+				"buffer_size": 11949,
 				"line_ending": "Unix"
 			}
 		},
@@ -155,6 +156,18 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"gameFinished",
+			"CheckCollide",
+			"blockObjects",
+			"gameFinished",
+			"SpawnBlock",
+			"UpdateGame",
+			"ImproveInput",
+			"init",
+			"tetris",
+			"blocks",
+			"level",
+			"score",
 			"CheckCollide",
 			"static",
 			"Xmax",
@@ -199,15 +212,15 @@
 					"file": "Assets/Script/GameManager.cs",
 					"settings":
 					{
-						"buffer_size": 10724,
+						"buffer_size": 11949,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3599,
-								3599
+								11219,
+								11219
 							]
 						],
 						"settings":
@@ -217,7 +230,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1602.0,
+						"translation.y": 6616.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
@@ -244,7 +257,7 @@
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
-						"translation.y": 114.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"type": "text"
