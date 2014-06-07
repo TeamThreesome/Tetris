@@ -12,9 +12,9 @@ using Random = UnityEngine.Random;
 public class GameManager : MonoBehaviour {
 
     //static variables for game play
-    static public int Xmax = 12;   //Screen size of game
-    static public int Ymax = 24;
-    public float speed = 3; //init speed
+    static public int Xmax = 10;   //Screen size of game
+    static public int Ymax = 22;
+    public float speed = 2; //init speed
     //These are the different rewards when player finish 1 line or 2 or 3 or 4
     public int reward1 = 10;
     public int reward2 = 30;
@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour {
     public int reward4 = 500;
     //Increase the speed when how many blocks dropped
     public int levelThreshold = 15;
-    public float speedIncrement = 2.0f; //Speed every time increased
+    public float speedIncrement = 0.0f; //Speed every time increased
 
     static int score = 0;   //Score
     static int level = 0;   //Progress of game
@@ -117,7 +117,7 @@ public class GameManager : MonoBehaviour {
                 init();
                 score = 0;
                 level = 0;
-                speed = 3;
+                speed = 2;
                 SpawnBlock();
             }
             GUILayout.EndArea();
@@ -170,10 +170,10 @@ public class GameManager : MonoBehaviour {
         if(gameFinished)
             return;
         //Rotation
-        if(Input.GetKeyDown ("space") )
+        if(Input.GetKeyDown("space") || Input.GetKeyDown("up"))
             Rotate();
         //Moving left
-        if (Input.GetKeyDown("left"))
+        if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
             MoveLeft();
         else
             if (Input.GetAxis("Horizontal")==-1)
@@ -181,7 +181,7 @@ public class GameManager : MonoBehaviour {
             else
                 movingLeft = false;
         //Moving right
-        if (Input.GetKeyDown("right"))
+        if (Input.GetKeyDown("right") || Input.GetKeyDown("d"))
             MoveRight();
         else
             if (Input.GetAxis("Horizontal")==1)
@@ -189,7 +189,7 @@ public class GameManager : MonoBehaviour {
             else
                 movingRight = false;
         //Drop the block
-        if (Input.GetKey(KeyCode.DownArrow))
+        if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
             dropping = true;
         else
             dropping = false;
