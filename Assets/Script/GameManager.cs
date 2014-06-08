@@ -14,17 +14,18 @@ public class GameManager : MonoBehaviour {
     //static variables for game play
     static public int Xmax = 10;   //Screen size of game
     static public int Ymax = 22;
-    public float speed = 2; //init speed
     //These are the different rewards when player finish 1 line or 2 or 3 or 4
     public int reward1 = 10;
     public int reward2 = 30;
     public int reward3 = 100;
     public int reward4 = 500;
     //Increase the speed when how many blocks dropped
-    public int levelThreshold = 15;
-    public float speedIncrement = 0.0f; //Speed every time increased
+    public int levelThreshold = 30;
+    public float speed = 0.5f; //init speed
+    public float speedIncrement = 0.05f; //Speed every time increased
 
     static int score = 0;   //Score
+    static int RowsFinished = 0;   //Rows finished of game
     static int level = 0;   //Progress of game
     static int typeofBlocks = 7;    //Types of blocks  ######
     Block[] database;   //Store the basic info of blocks
@@ -46,6 +47,7 @@ public class GameManager : MonoBehaviour {
     GameObject cube;    //Prefab of cube
     Vector3 startPoint = new Vector3(Xmax/2,Ymax-1,0);  //start position
 
+    //-------------------------------------------------------------
 	// Use this for initialization
 	void Start () {	
         cube = (GameObject)Resources.Load("Cube");
@@ -101,6 +103,7 @@ public class GameManager : MonoBehaviour {
         StartCoroutine(ImproveInput());
 	}
 
+    //-------------------------------------------------------------
     //Show score here
     void OnGUI() {
         GUI.enabled = true;
@@ -117,19 +120,27 @@ public class GameManager : MonoBehaviour {
                 init();
                 score = 0;
                 level = 0;
-                speed = 2;
+                RowsFinished = 0;
+                speed = 0.5f;
                 SpawnBlock();
             }
             GUILayout.EndArea();
             return;
         }
         
-        GUILayout.BeginArea(new Rect(10, 10, 50,50));
-        text = "" + score;
+        GUILayout.BeginArea(new Rect(10, 10, 100, 200));
+        text = "Score : " + score;
+        GUILayout.TextArea(text);
+        text = "Rows :" + RowsFinished;
+        GUILayout.TextArea(text);
+        text = "Level : " + level;
+        GUILayout.TextArea(text);
+        text = "Speed : " + speed;
         GUILayout.TextArea(text);
         GUILayout.EndArea();
     }
     
+    //-------------------------------------------------------------
     void init() {
         for (int i = 0; i < Xmax; i++)
             for (int j = 0; j < Ymax; j++) {
@@ -139,6 +150,8 @@ public class GameManager : MonoBehaviour {
                 blockObjects[i, j] = null;
             }
     }
+
+    //-------------------------------------------------------------
     //Update the block
     IEnumerator UpdateGame()
     {
@@ -149,7 +162,7 @@ public class GameManager : MonoBehaviour {
                 if (dropping)
                     dropspeed = 0.0333f;
                 else
-                    dropspeed = 1.0f / speed;
+                    dropspeed = speed;
                 //dropspeed for controling the game speed
                 if (CheckCollide()) {
                     MarkCollide();
@@ -165,12 +178,13 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    //-------------------------------------------------------------
     //Here are all the controls
     void Update () {
         if(gameFinished)
             return;
         //Rotation
-        if(Input.GetKeyDown("space") || Input.GetKeyDown("up"))
+        if(Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
             Rotate();
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
@@ -195,6 +209,7 @@ public class GameManager : MonoBehaviour {
             dropping = false;
     }
 
+    //-------------------------------------------------------------
     //This is for improving the control of moving left or right
     IEnumerator ImproveInput() {
         while (true) {
@@ -214,6 +229,7 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    //-------------------------------------------------------------
     //Collision
     bool CheckCollide() {
 		for(int i=0;i<tetris.length;i++) {
@@ -227,15 +243,28 @@ public class GameManager : MonoBehaviour {
 		}
 		return false;
     }
+
+    //-------------------------------------------------------------
     //Apply the collision here
     void MarkCollide() {
+        int minY = 99;
 		for(int i=0;i<tetris.length;i++) {
 			int x = (int)tetris.blockObjects[i].transform.position.x;
 			int y = (int)tetris.blockObjects[i].transform.position.y;
 			blocks[x, y] = true;
         	blockObjects[x, y] = tetris.blockObjects[i];
+
+            if (y < minY)
+            {
+                minY = y;
+            }
 		}
+        //Score calculate here
+        int factor = dropping ? 2 : 1;
+        score += ((minY + 1) * (level + 1) * factor);
     }
+
+    //-------------------------------------------------------------
     //Chech if some row finished, from top to bottom
     void CheckRow()
     {
@@ -250,23 +279,20 @@ public class GameManager : MonoBehaviour {
                 checkedRow++;
             }//if
         }//for
-        //Score calculate here
-        switch (checkedRow) {
-            case 1:
-                score += reward1;
-                break;
-            case 2:
-                score += reward2;
-                break;
-            case 3:
-                score += reward3;
-                break;
-            case 4:
-                score += reward4;
-                break;
-        }//switch
+
+        //Update game level
+        if (checkedRow > 0)
+        {
+            RowsFinished += checkedRow;
+        }
+        if (RowsFinished > levelThreshold * (level + 1))
+        {
+            level++;
+            speed -= speedIncrement;
+        }
     }
 
+    //-------------------------------------------------------------
     //when row finished
     void CollapsRow(int row)
     {
@@ -283,6 +309,7 @@ public class GameManager : MonoBehaviour {
             }//for i
     }
 
+    //-------------------------------------------------------------
     bool MoveLeft()
     {
 		bool move = true;
@@ -306,6 +333,7 @@ public class GameManager : MonoBehaviour {
         return move;
     }
     
+    //-------------------------------------------------------------
     bool MoveRight()
     {
 		bool move = true;
@@ -330,6 +358,7 @@ public class GameManager : MonoBehaviour {
         return move;
     }
 	
+    //-------------------------------------------------------------
 	void Rotate()
 	{
         bool doRotate = true;
@@ -369,6 +398,7 @@ public class GameManager : MonoBehaviour {
         }
 	}
 
+    //-------------------------------------------------------------
     void SpawnBlock()
     {
         //Get a random block
@@ -388,13 +418,6 @@ public class GameManager : MonoBehaviour {
             {
                 Object.Destroy(obj);
             }
-        }
-        //TODO : Here is some game code
-        level++;
-        if (level > levelThreshold)
-        {
-            speed += speedIncrement;
-            level = 0;
         }
     }
 }
