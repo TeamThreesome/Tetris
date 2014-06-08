@@ -6,20 +6,23 @@
 using UnityEngine;
 using System.Collections;
 
-//This is class for Blocks
+//This is class for a Block
 public class Block {
 	
-	public int size;	// Size of container box of block
+	public int size;		// Size of container box of block
 	public bool[,] blocks;	//Define the shape of block
 	public Vector3 pos;		//position
-	//public int centerX,centerY;
 	public int length;		//This means the number of cube of block
 	public GameObject[] blockObjects;	//To reference the GameObject
-	public GameObject cube;	//Prefab
 
     //-------------------------------------------------------------
-	public void SpawnBlock()
+	public void Spawn(Block template, GameObject cubePrefab, Vector3 startPosition)
 	{
+        size = template.size;
+		blocks = template.blocks;
+		length = template.length;
+		pos = startPosition;
+
 		blockObjects = new GameObject[length];
 		Color col = new Color();	//Random color for block
         col.a = 1.0f;
@@ -33,7 +36,7 @@ public class Block {
 			{
 				if(blocks[i,j])
 				{
-					blockObjects[index] = (GameObject)Object.Instantiate(cube);
+					blockObjects[index] = (GameObject)Object.Instantiate(cubePrefab);
 					blockObjects[index].GetComponent<MeshRenderer>().material.SetColor("_Color",col);
 					blockObjects[index].transform.position = new Vector3(pos.x+j,pos.y-i,0);
 					index++;

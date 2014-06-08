@@ -243,13 +243,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1767cbec07826ad4a94920f40ec00b0a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 2
   reward1: 10
   reward2: 30
   reward3: 100
   reward4: 500
-  levelThreshold: 15
-  speedIncrement: 0
+  levelThreshold: 30
+  speed: .5
+  speedIncrement: .0500000007
 --- !u!1 &1728832112
 GameObject:
   m_ObjectHideFlags: 0
@@ -423,7 +423,7 @@ AudioSource:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 2076230773}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_audioClip: {fileID: 8300000, guid: 789a65f1db13bc84da5fd44b6e0600df, type: 3}
   m_PlayOnAwake: 1

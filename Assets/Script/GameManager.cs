@@ -59,43 +59,36 @@ public class GameManager : MonoBehaviour {
         database[0].size = 2;
 		database[0].blocks = new bool[2,2]{{true,true},{true,true}};
 		database[0].length = 4;
-		database[0].cube = cube;
 
         database[1] = new Block();
         database[1].size = 3;
 		database[1].blocks = new bool[3,3]{{false,true,false},{true,true,true},{false,false,false}};
 		database[1].length = 4;
-		database[1].cube = cube;
 
         database[2] = new Block();
         database[2].size = 3;
         database[2].blocks = new bool[3, 3] { { false, false, false }, { true, true, false }, { false, true, true } };
         database[2].length = 4;
-        database[2].cube = cube;
 
         database[3] = new Block();
         database[3].size = 3;
         database[3].blocks = new bool[3, 3] { { false, false, false }, { false, true, true }, { true, true, false } };
         database[3].length = 4;
-        database[3].cube = cube;
 
         database[4] = new Block();
         database[4].size = 3;
         database[4].blocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { false, false, true } };
         database[4].length = 4;
-        database[4].cube = cube;
 
         database[5] = new Block();
         database[5].size = 3;
         database[5].blocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { true, false, false } };
         database[5].length = 4;
-        database[5].cube = cube;
 
         database[6] = new Block();
         database[6].size = 4;
         database[6].blocks = new bool[4, 4] { { false, false, false, false}, { false, false, false,false }, { true, true, true,true }, { false, false, false, false}};
         database[6].length = 4;
-        database[6].cube = cube;
 
         init();
 		SpawnBlock();
@@ -113,6 +106,8 @@ public class GameManager : MonoBehaviour {
         {
             GUILayout.BeginArea(new Rect(width/2 - 75, height/2-25, 150, 50));
             text = "Game Finished";
+            GUILayout.Box(text);
+            text = "Your Score" + score;
             GUILayout.Box(text);
             if(GUILayout.Button("Start a New Game"))
             {
@@ -403,14 +398,11 @@ public class GameManager : MonoBehaviour {
     {
         //Get a random block
         int index = (int)Random.Range(0,typeofBlocks);
+        //Create next block
         tetris = new Block();
-        tetris.size = database[index].size;
-		tetris.blocks = database[index].blocks;
-		tetris.length = database[index].length;
-		tetris.cube = cube;
-		tetris.pos = startPoint;
+		tetris.Spawn(database[index], cube, startPoint);
 
-		tetris.SpawnBlock();
+        //Check the if game is finished
         if(CheckCollide())
         {
             gameFinished = true;
