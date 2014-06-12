@@ -31,9 +31,17 @@ public class GameManager : MonoBehaviour {
     Block[] database;   //Store the basic info of blocks
 
     //Some help static variable
+    static bool toggleDropping = false;
     static bool dropping = false;
-    static bool movingLeft = false;
-    static bool movingRight = false;
+    // static bool movingLeft = false;
+    // static bool movingRight = false;
+
+    float leftMoveGap;
+    float leftMoveInterval;
+    float rightMoveGap;
+    float rightMoveInterval;
+    float droppingGap;
+    float droppingInterval;
 
     bool gameFinished = false;
 
@@ -92,8 +100,6 @@ public class GameManager : MonoBehaviour {
 
         init();
 		SpawnBlock();
-        StartCoroutine(UpdateGame());
-        StartCoroutine(ImproveInput());
 	}
 
     //-------------------------------------------------------------
@@ -148,79 +154,109 @@ public class GameManager : MonoBehaviour {
 
     //-------------------------------------------------------------
     //Update the block
-    IEnumerator UpdateGame()
+    void UpdateGame()
     {
-        while (true){
-            if(!gameFinished)
-            {
-                float dropspeed;
-                if (dropping)
-                    dropspeed = 0.0333f;
-                else
-                    dropspeed = speed;
-                //dropspeed for controling the game speed
-                if (CheckCollide()) {
-                    MarkCollide();
-                    CheckRow();
-                    SpawnBlock();
-                }
-                else
-                    tetris.UpdateBlock();   //Drop it
-                yield return new WaitForSeconds(dropspeed);
+        if(!gameFinished)
+        {
+            if (CheckCollide()) {
+                MarkCollide();
+                CheckRow();
+                SpawnBlock();
+                //Clear dropping
+                droppingGap = 0;
+                dropping = false;
+                toggleDropping = false;
             }
             else
-                yield return new WaitForSeconds(0.5f);
+                tetris.UpdateBlock();   //Drop it
         }
     }
 
     //-------------------------------------------------------------
     //Here are all the controls
-    void Update () {
+    void Update() {
         if(gameFinished)
+        {
             return;
+        }
         //Rotation
         if(Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
+        {
             Rotate();
+        }
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
+        {
             MoveLeft();
-        else
-            if (Input.GetAxis("Horizontal")==-1)
-                movingLeft = true;
-            else
-                movingLeft = false;
+        }
+        if (Input.GetKey("left") || Input.GetKey("a"))
+        {
+            leftMoveGap += Time.deltaTime;
+            if (leftMoveGap > 0.2)
+            {
+                leftMoveInterval += Time.deltaTime;
+                if (leftMoveInterval > 0.1)
+                {
+                    leftMoveInterval = 0;
+                    MoveLeft();
+                }
+            }
+        }
+        if (Input.GetKeyUp("left") || Input.GetKeyUp("a"))
+        {
+            leftMoveGap = 0;
+        }
         //Moving right
         if (Input.GetKeyDown("right") || Input.GetKeyDown("d"))
+        {
             MoveRight();
-        else
-            if (Input.GetAxis("Horizontal")==1)
-                movingRight = true;
-            else
-                movingRight = false;
-        //Drop the block
-        if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
-            dropping = true;
-        else
-            dropping = false;
-    }
-
-    //-------------------------------------------------------------
-    //This is for improving the control of moving left or right
-    IEnumerator ImproveInput() {
-        while (true) {
-            if(!gameFinished)
+        }
+        if (Input.GetKey("right") || Input.GetKey("d"))
+        {
+            rightMoveGap += Time.deltaTime;
+            if (rightMoveGap > 0.2)
             {
-                if (movingLeft || movingRight)
-                    yield return new WaitForSeconds(0.1f);
-                else
-                    yield return new WaitForSeconds(0.5f);
-                if (movingLeft)
-                    MoveLeft();
-                if (movingRight)
+                rightMoveInterval += Time.deltaTime;
+                if (rightMoveInterval > 0.1)
+                {
+                    rightMoveInterval = 0;
                     MoveRight();
+                }
             }
-            else
-                yield return new WaitForSeconds(0.5f);
+        }
+        if (Input.GetKeyUp("right") || Input.GetKeyUp("d"))
+        {
+            rightMoveGap = 0;
+        }
+        //Drop the block
+        if (Input.GetKeyDown("down") || Input.GetKeyDown("s"))
+        {
+            toggleDropping = true;
+        }
+        if (Input.GetKey("down") || Input.GetKey("s"))
+        {
+            if (toggleDropping)
+            {
+                droppingGap += Time.deltaTime;
+                if (droppingGap > 0.1)
+                {
+                    dropping = true;
+                }
+            }
+        }
+        if (Input.GetKeyUp("down") || Input.GetKeyUp("s"))
+        {
+            droppingGap = 0;
+            dropping = false;
+            toggleDropping = false;
+        }
+
+        droppingInterval += Time.deltaTime;
+        float dropspeed = dropping ? 0.0333f : speed;
+        if (droppingInterval > dropspeed)
+        {
+            UpdateGame();
+            droppingInterval = 0;
         }
     }
 
