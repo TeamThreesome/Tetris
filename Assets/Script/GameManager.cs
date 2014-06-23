@@ -8,17 +8,12 @@ using System.Collections;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-//Class for general manager of this Tetris
+//Class for general manager of this Tetris game
 public class GameManager : MonoBehaviour {
 
     //static variables for game play
-    static public int Xmax = 10;   //Screen size of game
+    static public int Xmax = 10;   //Screen size of game    should be const
     static public int Ymax = 22;
-    //These are the different rewards when player finish 1 line or 2 or 3 or 4
-    public int reward1 = 10;
-    public int reward2 = 30;
-    public int reward3 = 100;
-    public int reward4 = 500;
     //Increase the speed when how many blocks dropped
     public int levelThreshold = 30;
     public float speed = 0.5f; //init speed
@@ -27,7 +22,7 @@ public class GameManager : MonoBehaviour {
     static int score = 0;   //Score
     static int RowsFinished = 0;   //Rows finished of game
     static int level = 0;   //Progress of game
-    static int typeofBlocks = 7;    //Types of blocks  ######
+    static int typeofBlocks = 7;    //Types of blocks  ###### Should change this one to const
     Block[] database;   //Store the basic info of blocks
 
     //Some help static variable
@@ -108,15 +103,13 @@ public class GameManager : MonoBehaviour {
         GUI.enabled = true;
 
         string text;
-        if(gameFinished)
-        {
+        if(gameFinished) {
             GUILayout.BeginArea(new Rect(width/2 - 75, height/2-25, 150, 50));
             text = "Game Finished";
             GUILayout.Box(text);
             text = "Your Score" + score;
             GUILayout.Box(text);
-            if(GUILayout.Button("Start a New Game"))
-            {
+            if(GUILayout.Button("Start a New Game")) {
                 gameFinished = false;
                 init();
                 score = 0;
@@ -154,10 +147,8 @@ public class GameManager : MonoBehaviour {
 
     //-------------------------------------------------------------
     //Update the block
-    void UpdateGame()
-    {
-        if(!gameFinished)
-        {
+    void UpdateGame() {
+        if(!gameFinished) {
             if (CheckCollide()) {
                 MarkCollide();
                 CheckRow();
@@ -176,76 +167,52 @@ public class GameManager : MonoBehaviour {
     //Here are all the controls
     void Update() {
         if(gameFinished)
-        {
             return;
-        }
         //Rotation
         if(Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
-        {
             Rotate();
-        }
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
-        {
             MoveLeft();
-        }
-        if (Input.GetKey("left") || Input.GetKey("a"))
-        {
+        //Holding left
+        if (Input.GetKey("left") || Input.GetKey("a")) {
             leftMoveGap += Time.deltaTime;
-            if (leftMoveGap > 0.2)
-            {
+            if (leftMoveGap > 0.2) {
                 leftMoveInterval += Time.deltaTime;
-                if (leftMoveInterval > 0.1)
-                {
+                if (leftMoveInterval > 0.1) {
                     leftMoveInterval = 0;
                     MoveLeft();
                 }
             }
         }
         if (Input.GetKeyUp("left") || Input.GetKeyUp("a"))
-        {
             leftMoveGap = 0;
-        }
         //Moving right
         if (Input.GetKeyDown("right") || Input.GetKeyDown("d"))
-        {
             MoveRight();
-        }
-        if (Input.GetKey("right") || Input.GetKey("d"))
-        {
+        if (Input.GetKey("right") || Input.GetKey("d")) {
             rightMoveGap += Time.deltaTime;
-            if (rightMoveGap > 0.2)
-            {
+            if (rightMoveGap > 0.2) {
                 rightMoveInterval += Time.deltaTime;
-                if (rightMoveInterval > 0.1)
-                {
+                if (rightMoveInterval > 0.1) {
                     rightMoveInterval = 0;
                     MoveRight();
                 }
             }
         }
         if (Input.GetKeyUp("right") || Input.GetKeyUp("d"))
-        {
             rightMoveGap = 0;
-        }
         //Drop the block
         if (Input.GetKeyDown("down") || Input.GetKeyDown("s"))
-        {
             toggleDropping = true;
-        }
-        if (Input.GetKey("down") || Input.GetKey("s"))
-        {
-            if (toggleDropping)
-            {
+        if (Input.GetKey("down") || Input.GetKey("s")) {
+            if (toggleDropping) {
                 droppingGap += Time.deltaTime;
                 if (droppingGap > 0.1)
-                {
                     dropping = true;
-                }
             }
         }
-        if (Input.GetKeyUp("down") || Input.GetKeyUp("s"))
-        {
+        if (Input.GetKeyUp("down") || Input.GetKeyUp("s")) {
             droppingGap = 0;
             dropping = false;
             toggleDropping = false;
@@ -253,8 +220,7 @@ public class GameManager : MonoBehaviour {
 
         droppingInterval += Time.deltaTime;
         float dropspeed = dropping ? 0.0333f : speed;
-        if (droppingInterval > dropspeed)
-        {
+        if (droppingInterval > dropspeed) {
             UpdateGame();
             droppingInterval = 0;
         }
@@ -286,9 +252,7 @@ public class GameManager : MonoBehaviour {
         	blockObjects[x, y] = tetris.blockObjects[i];
 
             if (y < minY)
-            {
                 minY = y;
-            }
 		}
         //Score calculate here
         int factor = dropping ? 2 : 1;
@@ -297,8 +261,7 @@ public class GameManager : MonoBehaviour {
 
     //-------------------------------------------------------------
     //Chech if some row finished, from top to bottom
-    void CheckRow()
-    {
+    void CheckRow() {
         int checkedRow = 0;
         for (int i = Ymax-1; i >=0; i--) {
             bool RowFinished = true;
@@ -313,11 +276,8 @@ public class GameManager : MonoBehaviour {
 
         //Update game level
         if (checkedRow > 0)
-        {
             RowsFinished += checkedRow;
-        }
-        if (RowsFinished > levelThreshold * (level + 1))
-        {
+        if (RowsFinished > levelThreshold * (level + 1)) {
             level++;
             speed -= speedIncrement;
         }
@@ -325,8 +285,7 @@ public class GameManager : MonoBehaviour {
 
     //-------------------------------------------------------------
     //when row finished
-    void CollapsRow(int row)
-    {
+    void CollapsRow(int row) {
         for (int i = 0; i < Xmax;i++ )
             Object.Destroy(blockObjects[i, row]);
         for (int j = row; j < Ymax-1;j++ )
@@ -341,21 +300,18 @@ public class GameManager : MonoBehaviour {
     }
 
     //-------------------------------------------------------------
-    bool MoveLeft()
-    {
+    bool MoveLeft() {
 		bool move = true;
 		for(int i=0;i<tetris.length;i++) {
 			Vector3 pos = tetris.blockObjects[i].transform.position;
-			if (tetris.blockObjects[i].transform.position.x <= 0 || blocks[((int)pos.x-1),(int)pos.y]==true)
-	        {
+			if (tetris.blockObjects[i].transform.position.x <= 0
+                    || blocks[((int)pos.x-1),(int)pos.y]==true) {
 				move = false;
 				break;
 			}
 		}
-		if(move)
-		{
-			for(int i=0;i<tetris.length;i++)
-			{
+		if(move) {
+			for(int i=0;i<tetris.length;i++) {
 				Vector3 pos = tetris.blockObjects[i].transform.position;
 				tetris.blockObjects[i].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);
 			}
@@ -365,22 +321,18 @@ public class GameManager : MonoBehaviour {
     }
     
     //-------------------------------------------------------------
-    bool MoveRight()
-    {
+    bool MoveRight() {
 		bool move = true;
-		for(int i=0;i<tetris.length;i++)
-		{
+		for(int i=0;i<tetris.length;i++) {
 			Vector3 pos = tetris.blockObjects[i].transform.position;
-			if (tetris.blockObjects[i].transform.position.x >= Xmax-1 || blocks[((int)pos.x+1),(int)pos.y]==true)
-			{
+			if (tetris.blockObjects[i].transform.position.x >= Xmax-1
+                    || blocks[((int)pos.x+1),(int)pos.y]==true) {
 				move = false;
 				break;
 			}
 		}
-		if(move)
-		{
-			for(int i=0;i<tetris.length;i++)
-			{
+		if(move) {
+			for(int i=0;i<tetris.length;i++) {
 				Vector3 pos = tetris.blockObjects[i].transform.position;
 				tetris.blockObjects[i].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);
 			}
@@ -390,8 +342,7 @@ public class GameManager : MonoBehaviour {
     }
 	
     //-------------------------------------------------------------
-	void Rotate()
-	{
+	void Rotate() {
         bool doRotate = true;
         int nLeft = 0;
         int nRight = 0;
@@ -430,8 +381,7 @@ public class GameManager : MonoBehaviour {
 	}
 
     //-------------------------------------------------------------
-    void SpawnBlock()
-    {
+    void SpawnBlock() {
         //Get a random block
         int index = (int)Random.Range(0,typeofBlocks);
         //Create next block
@@ -439,11 +389,9 @@ public class GameManager : MonoBehaviour {
 		tetris.Spawn(database[index], cube, startPoint);
 
         //Check the if game is finished
-        if(CheckCollide())
-        {
+        if(CheckCollide()) {
             gameFinished = true;
-            foreach(GameObject obj in tetris.blockObjects)
-            {
+            foreach(GameObject obj in tetris.blockObjects) {
                 Object.Destroy(obj);
             }
         }
