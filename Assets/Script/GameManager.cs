@@ -1,33 +1,37 @@
-//--------------------------------------------
+//------------------------------------------------------------------------------
 // Jimmy Liu
 // OWNSELF
 // 2013.6.28
-//--------------------------------------------
+//------------------------------------------------------------------------------
 using UnityEngine;
 using System.Collections;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+//------------------------------------------------------------------------------
 //Class for general manager of this Tetris game
 public class GameManager : MonoBehaviour {
 
-    //static variables for game play
-    static public int Xmax = 10;   //Screen size of game    should be const
-    static public int Ymax = 22;
+    //--------------------------------------------------------------------------
+    const int MaxBlocksWidth  = 10;   //Screen size of game    should be const
+    const int MaxBlocksHeight = 22;
+
+    int score = 0;   //Score
+    int RowsFinished = 0;   //Rows finished of game
+    int level = 0;   //Progress of game
+    int typeofBlocks = 7;    //Types of blocks  ###### Should change this one to const
+
+    bool toggleDropping = false;
+    bool dropping = false;
+
     //Increase the speed when how many blocks dropped
     public int levelThreshold = 30;
     public float speed = 0.5f; //init speed
     public float speedIncrement = 0.05f; //Speed every time increased
 
-    static int score = 0;   //Score
-    static int RowsFinished = 0;   //Rows finished of game
-    static int level = 0;   //Progress of game
-    static int typeofBlocks = 7;    //Types of blocks  ###### Should change this one to const
     Block[] database;   //Store the basic info of blocks
 
     //Some help static variable
-    static bool toggleDropping = false;
-    static bool dropping = false;
     // static bool movingLeft = false;
     // static bool movingRight = false;
 
@@ -44,13 +48,13 @@ public class GameManager : MonoBehaviour {
     int height = Screen.height;
 
     //Screen array for store the info of cubes
-    bool[,] blocks = new bool[Xmax,Ymax];
-    GameObject[,] mBlockObjects = new GameObject[Xmax, Ymax]; 
+    bool[,] blocks = new bool[MaxBlocksWidth,MaxBlocksHeight];
+    GameObject[,] mBlockObjects = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
 	Block tetris;  //The moving one block
     GameObject cube;    //Prefab of cube
-    Vector3 startPoint = new Vector3(Xmax/2,Ymax-1,0);  //start position
+    Vector3 startPoint = new Vector3(MaxBlocksWidth/2,MaxBlocksHeight-1,0);  //start position
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
 	// Use this for initialization
 	void Start () {	
         cube = (GameObject)Resources.Load("Cube");
@@ -97,7 +101,7 @@ public class GameManager : MonoBehaviour {
 		SpawnBlock();
 	}
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Show score here
     void OnGUI() {
         GUI.enabled = true;
@@ -134,10 +138,10 @@ public class GameManager : MonoBehaviour {
         GUILayout.EndArea();
     }
     
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void init() {
-        for (int i = 0; i < Xmax; i++)
-            for (int j = 0; j < Ymax; j++) {
+        for (int i = 0; i < MaxBlocksWidth; i++)
+            for (int j = 0; j < MaxBlocksHeight; j++) {
                 blocks[i, j] = false;
                 if(mBlockObjects[i,j]!=null)
                     Object.Destroy(mBlockObjects[i,j]);
@@ -145,7 +149,7 @@ public class GameManager : MonoBehaviour {
             }
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Update the block
     void UpdateGame() {
         if(!gameFinished) {
@@ -163,7 +167,7 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Here are all the controls
     void Update() {
         if(gameFinished)
@@ -226,7 +230,7 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Collision
     bool CheckCollide() {
 		for(int i=0;i<tetris.mLength;i++) {
@@ -241,7 +245,7 @@ public class GameManager : MonoBehaviour {
 		return false;
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Apply the collision here
     void MarkCollide() {
         int minY = 99;
@@ -259,13 +263,13 @@ public class GameManager : MonoBehaviour {
         score += ((minY + 1) * (level + 1) * factor);
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //Chech if some row finished, from top to bottom
     void CheckRow() {
         int checkedRow = 0;
-        for (int i = Ymax-1; i >=0; i--) {
+        for (int i = MaxBlocksHeight-1; i >=0; i--) {
             bool RowFinished = true;
-            for (int j = 0; j < Xmax;j++ )
+            for (int j = 0; j < MaxBlocksWidth;j++ )
                 if (blocks[j, i] == false)
                     RowFinished = false;
             if (RowFinished) {
@@ -283,13 +287,13 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     //when row finished
     void CollapsRow(int row) {
-        for (int i = 0; i < Xmax;i++ )
+        for (int i = 0; i < MaxBlocksWidth;i++ )
             Object.Destroy(mBlockObjects[i, row]);
-        for (int j = row; j < Ymax-1;j++ )
-            for (int i = 0; i < Xmax;i++ ){
+        for (int j = row; j < MaxBlocksHeight-1;j++ )
+            for (int i = 0; i < MaxBlocksWidth;i++ ){
                 blocks[i, j] = blocks[i, j + 1];
                 mBlockObjects[i, j] = mBlockObjects[i, j + 1];
                 if (mBlockObjects[i, j] != null) {
@@ -299,7 +303,7 @@ public class GameManager : MonoBehaviour {
             }//for i
     }
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     bool MoveLeft() {
 		bool move = true;
 		for(int i=0;i<tetris.mLength;i++) {
@@ -320,12 +324,12 @@ public class GameManager : MonoBehaviour {
         return move;
     }
     
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     bool MoveRight() {
 		bool move = true;
 		for(int i=0;i<tetris.mLength;i++) {
 			Vector3 pos = tetris.mBlockObjects[i].transform.position;
-			if (tetris.mBlockObjects[i].transform.position.x >= Xmax-1
+			if (tetris.mBlockObjects[i].transform.position.x >= MaxBlocksWidth-1
                     || blocks[((int)pos.x+1),(int)pos.y]==true) {
 				move = false;
 				break;
@@ -341,7 +345,7 @@ public class GameManager : MonoBehaviour {
         return move;
     }
 	
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
 	void Rotate() {
         bool doRotate = true;
         int nLeft = 0;
@@ -356,7 +360,7 @@ public class GameManager : MonoBehaviour {
                     }
                     else
                         nRight++;
-                while(tetris.mPos.x+tetris.mSize>Xmax)
+                while(tetris.mPos.x+tetris.mSize>MaxBlocksWidth)
                     if(!MoveLeft()){
                         doRotate = false;
                         break;
@@ -380,7 +384,7 @@ public class GameManager : MonoBehaviour {
         }
 	}
 
-    //-------------------------------------------------------------
+    //--------------------------------------------------------------------------
     void SpawnBlock() {
         //Get a random block
         int index = (int)Random.Range(0,typeofBlocks);
@@ -396,4 +400,5 @@ public class GameManager : MonoBehaviour {
             }
         }
     }
+    //--------------------------------------------------------------------------
 }
