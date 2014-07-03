@@ -29,15 +29,16 @@ public class GameManager : MonoBehaviour {
     //Game status
     float mSpeed = 0.5f; //time interval of game update(seconds)    //TODO : Change to mTickingTime
     bool mIsGameFinished = false;
+    bool mIsFastDropping = false;
+    bool mAllowFastDropping = false;    //Shouldn't continue fast dropping from next block
 
     //Game content variables
-    Block[] mBlocksData;   //Store the basic info of blocks
-    GameObject mBlockPrefab;    //Prefab of cube
-    bool[,] mTetrisState = new bool[MaxBlocksWidth,MaxBlocksHeight];
-    GameObject[,] mBlockObjects = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
-    Vector3 mStartPosition = new Vector3(MaxBlocksWidth/2,MaxBlocksHeight-1,0);
-    Block mActiveBlock;  //The moving one block
-
+    Block[]         mBlocksData;    //Store the basic info of blocks
+    GameObject      mBlockPrefab;   //Prefab of cube
+    bool[,]         mTetrisState    = new bool[MaxBlocksWidth,MaxBlocksHeight];
+    GameObject[,]   mBlockObjects   = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
+    Vector3         mStartPosition  = new Vector3(MaxBlocksWidth/2,MaxBlocksHeight-1,0);
+    Block           mActiveBlock;   //The moving one block
 
     float leftMoveGap;
     float leftMoveInterval;
@@ -45,11 +46,6 @@ public class GameManager : MonoBehaviour {
     float rightMoveInterval;
     float droppingGap;
     float droppingInterval;
-
-    bool toggleDropping = false;
-    bool mIsFastDropping = false;
-
-    //Screen array for store the info of cubes
 
     //--------------------------------------------------------------------------
 	// Use this for initialization
@@ -157,7 +153,7 @@ public class GameManager : MonoBehaviour {
                 //Clear dropping
                 droppingGap = 0;
                 mIsFastDropping = false;
-                toggleDropping = false;
+                mAllowFastDropping = false;
             }
             else
                 mActiveBlock.UpdateBlock();   //Drop it
@@ -205,9 +201,9 @@ public class GameManager : MonoBehaviour {
             rightMoveGap = 0;
         //Drop the block
         if (Input.GetKeyDown("down") || Input.GetKeyDown("s"))
-            toggleDropping = true;
+            mAllowFastDropping = true;
         if (Input.GetKey("down") || Input.GetKey("s")) {
-            if (toggleDropping) {
+            if (mAllowFastDropping) {
                 droppingGap += Time.deltaTime;
                 if (droppingGap > 0.1)
                     mIsFastDropping = true;
@@ -216,7 +212,7 @@ public class GameManager : MonoBehaviour {
         if (Input.GetKeyUp("down") || Input.GetKeyUp("s")) {
             droppingGap = 0;
             mIsFastDropping = false;
-            toggleDropping = false;
+            mAllowFastDropping = false;
         }
 
         droppingInterval += Time.deltaTime;

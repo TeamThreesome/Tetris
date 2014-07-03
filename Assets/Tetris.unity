@@ -243,13 +243,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1767cbec07826ad4a94920f40ec00b0a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reward1: 10
-  reward2: 30
-  reward3: 100
-  reward4: 500
-  levelThreshold: 30
-  speed: .5
-  speedIncrement: .0500000007
 --- !u!1 &1728832112
 GameObject:
   m_ObjectHideFlags: 0
