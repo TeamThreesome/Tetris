@@ -35,9 +35,9 @@ public class GameManager : MonoBehaviour {
     //Game content variables
     Block[]         mBlocksData;    //Store the basic info of blocks
     GameObject      mBlockPrefab;   //Prefab of cube
-    bool[,]         mTetrisState    = new bool[MaxBlocksWidth,MaxBlocksHeight];
+    bool[,]         mTetrisState    = new bool[MaxBlocksWidth, MaxBlocksHeight];
     GameObject[,]   mBlockObjects   = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
-    Vector3         mStartPosition  = new Vector3(MaxBlocksWidth/2,MaxBlocksHeight-1,0);
+    Vector3         mStartPosition  = new Vector3(MaxBlocksWidth/2, MaxBlocksHeight - 1, 0);
     Block           mActiveBlock;   //The moving one block
 
     float leftMoveGap;
@@ -49,115 +49,158 @@ public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
 	// Use this for initialization
-	void Start () {	
+	void Start() {	
+
         mBlockPrefab = (GameObject)Resources.Load("Cube");
-		
-		//Initialize the type of Blocks
-        mBlocksData = new Block[BlockTypes];
+
+        mBlocksData = new Block[BlockTypes]; //Initialize the type of Blocks
 
         mBlocksData[0] = new Block();
         mBlocksData[0].mSize = 2;
-		mBlocksData[0].mBlocks = new bool[2,2]{{true,true},{true,true}};
+		mBlocksData[0].mBlocks = new bool[2,2]{{true, true}, {true, true}};
 		mBlocksData[0].mLength = 4;
 
         mBlocksData[1] = new Block();
         mBlocksData[1].mSize = 3;
-		mBlocksData[1].mBlocks = new bool[3,3]{{false,true,false},{true,true,true},{false,false,false}};
+		mBlocksData[1].mBlocks = new bool[3,3]{{false, true, false}, {true, true, true}, {false, false, false}};
 		mBlocksData[1].mLength = 4;
 
         mBlocksData[2] = new Block();
         mBlocksData[2].mSize = 3;
-        mBlocksData[2].mBlocks = new bool[3, 3] { { false, false, false }, { true, true, false }, { false, true, true } };
+        mBlocksData[2].mBlocks = new bool[3, 3] {{false, false, false}, {true, true, false}, {false, true, true}};
         mBlocksData[2].mLength = 4;
 
         mBlocksData[3] = new Block();
         mBlocksData[3].mSize = 3;
-        mBlocksData[3].mBlocks = new bool[3, 3] { { false, false, false }, { false, true, true }, { true, true, false } };
+        mBlocksData[3].mBlocks = new bool[3, 3] {{false, false, false}, {false, true, true}, {true, true, false}};
         mBlocksData[3].mLength = 4;
 
         mBlocksData[4] = new Block();
         mBlocksData[4].mSize = 3;
-        mBlocksData[4].mBlocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { false, false, true } };
+        mBlocksData[4].mBlocks = new bool[3, 3] {{false, false, false}, {true, true, true}, {false, false, true}};
         mBlocksData[4].mLength = 4;
 
         mBlocksData[5] = new Block();
         mBlocksData[5].mSize = 3;
-        mBlocksData[5].mBlocks = new bool[3, 3] { { false, false, false }, { true, true, true }, { true, false, false } };
+        mBlocksData[5].mBlocks = new bool[3, 3] {{false, false, false}, {true, true, true}, {true, false, false}};
         mBlocksData[5].mLength = 4;
 
         mBlocksData[6] = new Block();
         mBlocksData[6].mSize = 4;
-        mBlocksData[6].mBlocks = new bool[4, 4] { { false, false, false, false}, { false, false, false,false }, { true, true, true,true }, { false, false, false, false}};
+        mBlocksData[6].mBlocks = new bool[4, 4] {{false, false, false, false}, {false, false, false,false}, {true, true, true,true}, {false, false, false, false}};
         mBlocksData[6].mLength = 4;
 
-        init();
-		SpawnBlock();
+        RestartGame();
 	}
 
     //--------------------------------------------------------------------------
-    //Show score here
-    void OnGUI() {
-        GUI.enabled = true;
-
-        string text;
-        if(mIsGameFinished) {
-            GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2-25, 150, 50));
-            text = "Game Finished";
-            GUILayout.Box(text);
-            text = "Your Score" + mScore;
-            GUILayout.Box(text);
-            if(GUILayout.Button("Start a New Game")) {
-                mIsGameFinished = false;
-                init();
-                mScore = 0;
-                mLevel = 0;
-                mFinishedRows = 0;
-                mSpeed = 0.5f;
-                SpawnBlock();
-            }
-            GUILayout.EndArea();
-            return;
-        }
-        
-        GUILayout.BeginArea(new Rect(10, 10, 100, 200));
-        text = "Score : " + mScore;
-        GUILayout.TextArea(text);
-        text = "Rows :" + mFinishedRows;
-        GUILayout.TextArea(text);
-        text = "Level : " + mLevel;
-        GUILayout.TextArea(text);
-        text = "Speed : " + mSpeed;
-        GUILayout.TextArea(text);
-        GUILayout.EndArea();
+    void RestartGame() {
+        //Reset all the state
+        mIsGameFinished = false;
+        mScore = 0;
+        mLevel = 0;
+        mFinishedRows = 0;
+        mSpeed = 0.5f;
+        //Reinit the blocks and spawn the first one
+        Init();
+        SpawnBlock();
     }
-    
+
     //--------------------------------------------------------------------------
-    void init() {
+    void Init() {
+
         for (int i = 0; i < MaxBlocksWidth; i++)
             for (int j = 0; j < MaxBlocksHeight; j++) {
                 mTetrisState[i, j] = false;
-                if(mBlockObjects[i,j]!=null)
+                if(mBlockObjects[i,j] != null)
                     Object.Destroy(mBlockObjects[i,j]);
                 mBlockObjects[i, j] = null;
             }
     }
 
     //--------------------------------------------------------------------------
-    //Update the block
-    void UpdateGame() {
-        if(!mIsGameFinished) {
-            if (CheckCollide()) {
-                MarkCollide();
-                CheckRow();
-                SpawnBlock();
-                //Clear dropping
-                droppingGap = 0;
-                mIsFastDropping = false;
-                mAllowFastDropping = false;
-            }
-            else
-                mActiveBlock.UpdateBlock();   //Drop it
+    void SpawnBlock() {
+        //Get a random block
+        int index = (int)Random.Range(0, BlockTypes);
+        //Create next block
+        mActiveBlock = new Block();
+        mActiveBlock.Init(mBlocksData[index], mBlockPrefab, mStartPosition);
+
+        //Check the if game is finished
+        if(CheckCollide()) {
+            mIsGameFinished = true;
+            foreach(GameObject obj in mActiveBlock.mBlockObjects)
+                Object.Destroy(obj);
         }
+    }
+
+    //--------------------------------------------------------------------------
+    //Show score here
+    void OnGUI() {
+
+        GUI.enabled = true;
+
+        string text;
+        //Game finished
+        if(mIsGameFinished) {
+
+            GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 50));
+
+            text = "Game Finished";
+            GUILayout.Box(text);
+
+            text = "Your Score" + mScore;
+            GUILayout.Box(text);
+
+            if(GUILayout.Button("Start a New Game")) {
+                RestartGame();
+            }
+
+            GUILayout.EndArea();
+        }
+        //Game is running
+        else {
+
+            GUILayout.BeginArea(new Rect(10, 10, 100, 200));
+
+            text = "Score : " + mScore;
+            GUILayout.TextArea(text);
+
+            text = "Rows :" + mFinishedRows;
+            GUILayout.TextArea(text);
+
+            text = "Level : " + mLevel;
+            GUILayout.TextArea(text);
+
+            text = "Speed : " + mSpeed;
+            GUILayout.TextArea(text);
+
+            GUILayout.EndArea();
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    //Finish active block
+    void CollideActiveBlock() {
+
+        MarkCollide();      //Collide current one
+        CheckRow();         //Check if rows finished
+        SpawnBlock();       //Spawn next one
+        droppingGap = 0;    //Clear dropping
+        
+        mIsFastDropping = false;
+        mAllowFastDropping = false;
+    }
+    
+    //--------------------------------------------------------------------------
+    //Drop the active block
+    void UpdateActiveBlock() {
+
+        if(!mIsGameFinished)
+            if (CheckCollide())
+                CollideActiveBlock();       //Collide
+            else
+                mActiveBlock.UpdateBlock(); //Drop it
     }
 
     //--------------------------------------------------------------------------
@@ -218,7 +261,7 @@ public class GameManager : MonoBehaviour {
         droppingInterval += Time.deltaTime;
         float dropspeed = mIsFastDropping ? 0.0333f : mSpeed;
         if (droppingInterval > dropspeed) {
-            UpdateGame();
+            UpdateActiveBlock();
             droppingInterval = 0;
         }
     }
@@ -226,13 +269,14 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     //Collision
     bool CheckCollide() {
-		for(int i=0;i<mActiveBlock.mLength;i++) {
+
+		for(int i=0; i < mActiveBlock.mLength; i++) {
 			int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
 			int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
-			if (y == 0)
+			if (y == 0) //Hit bottom
 				return true;
 			else
-				if(mTetrisState[x, y - 1])
+				if(mTetrisState[x, y - 1])  //Hit others
 					return true;
 		}
 		return false;
@@ -241,15 +285,17 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     //Apply the collision here
     void MarkCollide() {
-        int minY = 99;
-		for(int i=0;i<mActiveBlock.mLength;i++) {
+
+        int minY = MaxBlocksHeight;
+		for(int i=0; i < mActiveBlock.mLength; i++) {
 			int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
 			int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
+            //Pass the active block to global blocks
 			mTetrisState[x, y] = true;
         	mBlockObjects[x, y] = mActiveBlock.mBlockObjects[i];
 
             if (y < minY)
-                minY = y;
+                minY = y; //Score depends on minY
 		}
         //Score calculate here
         int factor = mIsFastDropping ? 2 : 1;
@@ -259,19 +305,20 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     //Chech if some row finished, from top to bottom
     void CheckRow() {
+
         int checkedRow = 0;
-        for (int i = MaxBlocksHeight-1; i >=0; i--) {
+        for (int i = MaxBlocksHeight - 1; i >= 0; i--) {
             bool RowFinished = true;
-            for (int j = 0; j < MaxBlocksWidth;j++ )
-                if (mTetrisState[j, i] == false)
+            for (int j = 0; j < MaxBlocksWidth; j++)
+                if (mTetrisState[j, i] == false) //Empty block
                     RowFinished = false;
             if (RowFinished) {
-                CollapsRow(i);
+                CollapsRow(i); //Line i finished
                 checkedRow++;
-            }//if
-        }//for
+            }
+        }
 
-        //Update game level
+        //Update game level if some lines finshed
         if (checkedRow > 0)
             mFinishedRows += checkedRow;
         if (mFinishedRows > RowsToNextLevel * (mLevel + 1)) {
@@ -377,21 +424,5 @@ public class GameManager : MonoBehaviour {
         }
 	}
 
-    //--------------------------------------------------------------------------
-    void SpawnBlock() {
-        //Get a random block
-        int index = (int)Random.Range(0,BlockTypes);
-        //Create next block
-        mActiveBlock = new Block();
-		mActiveBlock.Spawn(mBlocksData[index], mBlockPrefab, mStartPosition);
-
-        //Check the if game is finished
-        if(CheckCollide()) {
-            mIsGameFinished = true;
-            foreach(GameObject obj in mActiveBlock.mBlockObjects) {
-                Object.Destroy(obj);
-            }
-        }
-    }
     //--------------------------------------------------------------------------
 }

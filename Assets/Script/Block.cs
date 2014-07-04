@@ -19,7 +19,7 @@ public class Block {
 	public GameObject[]		mBlockObjects;	//To reference the GameObject
 
     //--------------------------------------------------------------------------
-	public void Spawn(Block blockType, GameObject cubePrefab, Vector3 startPosition) {
+	public void Init(Block blockType, GameObject cubePrefab, Vector3 startPosition) {
 
         mSize 	= blockType.mSize;
 		mBlocks = blockType.mBlocks;
