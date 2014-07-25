@@ -27,18 +27,22 @@ public class GameManager : MonoBehaviour {
     int mLevel          = 0;
 
     //Game status
-    float mSpeed = 0.5f; //time interval of game update(seconds)    //TODO : Change to mTickingTime
+    float mSpeed = 0.5f; //time interval of game update - in seconds    //TODO : Change to mTickingTime
     bool mIsGameFinished = false;
     bool mIsFastDropping = false;
-    bool mAllowFastDropping = false;    //Shouldn't continue fast dropping from next block
+    bool mAllowFastDropping = false; //Shouldn't continue fast dropping from next block
+    int mNextBlockType = 0;
+    Color mNextBlockColor;
 
     //Game content variables
     Block[]         mBlocksData;    //Store the basic info of blocks
     GameObject      mBlockPrefab;   //Prefab of cube
-    bool[,]         mTetrisState    = new bool[MaxBlocksWidth, MaxBlocksHeight];
-    GameObject[,]   mBlockObjects   = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
-    Vector3         mStartPosition  = new Vector3(MaxBlocksWidth/2, MaxBlocksHeight - 1, 0);
+    bool[,]         mTetrisState = new bool[MaxBlocksWidth, MaxBlocksHeight];
+    GameObject[,]   mGameBlockObjects = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
+    Vector3         mStartPosition = new Vector3(MaxBlocksWidth/2, MaxBlocksHeight - 1, 0);
+    Vector3         mPreviewPosition = new Vector3(MaxBlocksWidth + 5, MaxBlocksHeight - 1, 0);
     Block           mActiveBlock;   //The moving one block
+    Block           mPreviewBlock;  //The block for preview
 
     float leftMoveGap;
     float leftMoveInterval;
@@ -48,8 +52,8 @@ public class GameManager : MonoBehaviour {
     float droppingInterval;
 
     //--------------------------------------------------------------------------
-	// Use this for initialization
-	void Start() {	
+    // Use this for initialization
+    void Start() {  
 
         mBlockPrefab = (GameObject)Resources.Load("Cube");
 
@@ -57,13 +61,13 @@ public class GameManager : MonoBehaviour {
 
         mBlocksData[0] = new Block();
         mBlocksData[0].mSize = 2;
-		mBlocksData[0].mBlocks = new bool[2,2]{{true, true}, {true, true}};
-		mBlocksData[0].mLength = 4;
+        mBlocksData[0].mBlocks = new bool[2,2]{{true, true}, {true, true}};
+        mBlocksData[0].mLength = 4;
 
         mBlocksData[1] = new Block();
         mBlocksData[1].mSize = 3;
-		mBlocksData[1].mBlocks = new bool[3,3]{{false, true, false}, {true, true, true}, {false, false, false}};
-		mBlocksData[1].mLength = 4;
+        mBlocksData[1].mBlocks = new bool[3,3]{{false, true, false}, {true, true, true}, {false, false, false}};
+        mBlocksData[1].mLength = 4;
 
         mBlocksData[2] = new Block();
         mBlocksData[2].mSize = 3;
@@ -91,7 +95,7 @@ public class GameManager : MonoBehaviour {
         mBlocksData[6].mLength = 4;
 
         RestartGame();
-	}
+    }
 
     //--------------------------------------------------------------------------
     void RestartGame() {
@@ -103,6 +107,7 @@ public class GameManager : MonoBehaviour {
         mSpeed = 0.5f;
         //Reinit the blocks and spawn the first one
         Init();
+        GenerateNextBlockType(); // Get first block type
         SpawnBlock();
     }
 
@@ -112,25 +117,43 @@ public class GameManager : MonoBehaviour {
         for (int i = 0; i < MaxBlocksWidth; i++)
             for (int j = 0; j < MaxBlocksHeight; j++) {
                 mTetrisState[i, j] = false;
-                if(mBlockObjects[i,j] != null)
-                    Object.Destroy(mBlockObjects[i,j]);
-                mBlockObjects[i, j] = null;
+                if(mGameBlockObjects[i,j] != null)
+                    Object.Destroy(mGameBlockObjects[i,j]);
+                mGameBlockObjects[i, j] = null;
             }
     }
 
     //--------------------------------------------------------------------------
-    void SpawnBlock() {
+    void GenerateNextBlockType() {
         //Get a random block
-        int index = (int)Random.Range(0, BlockTypes);
+        mNextBlockType = (int)Random.Range(0, BlockTypes);
+
+        // Random color for block
+        mNextBlockColor = new Color();    
+        mNextBlockColor.r = Random.Range(0f, 1f);
+        mNextBlockColor.g = Random.Range(0f, 1f);
+        mNextBlockColor.b = Random.Range(0f, 1f);
+        mNextBlockColor.a = 1.0f; // Opacity
+    }
+
+    //--------------------------------------------------------------------------
+    void SpawnBlock() {
         //Create next block
         mActiveBlock = new Block();
-        mActiveBlock.Init(mBlocksData[index], mBlockPrefab, mStartPosition);
+        mActiveBlock.Init(mBlocksData[mNextBlockType], mBlockPrefab, mStartPosition, mNextBlockColor);
 
         //Check the if game is finished
         if(CheckCollide()) {
             mIsGameFinished = true;
             foreach(GameObject obj in mActiveBlock.mBlockObjects)
                 Object.Destroy(obj);
+        }
+        else {
+            GenerateNextBlockType();    // Get next block type
+            if (mPreviewBlock != null)  // Destroy the previous preview
+                mPreviewBlock.Destroy();
+            mPreviewBlock = new Block();
+            mPreviewBlock.Init(mBlocksData[mNextBlockType], mBlockPrefab, mPreviewPosition, mNextBlockColor);
         }
     }
 
@@ -175,6 +198,9 @@ public class GameManager : MonoBehaviour {
             text = "Speed : " + mSpeed;
             GUILayout.TextArea(text);
 
+            text = "Next Type : " + mNextBlockType;
+            GUILayout.TextArea(text);
+
             GUILayout.EndArea();
         }
     }
@@ -183,10 +209,10 @@ public class GameManager : MonoBehaviour {
     //Finish active block
     void CollideActiveBlock() {
 
-        MarkCollide();      //Collide current one
-        CheckRow();         //Check if rows finished
-        SpawnBlock();       //Spawn next one
-        droppingGap = 0;    //Clear dropping
+        MarkCollide();              // Collide current one
+        CheckRow();                 // Check if rows finished
+        SpawnBlock();               // Spawn next one
+        droppingGap = 0;            // Clear dropping
         
         mIsFastDropping = false;
         mAllowFastDropping = false;
@@ -267,60 +293,67 @@ public class GameManager : MonoBehaviour {
     }
 
     //--------------------------------------------------------------------------
-    //Collision
+    // Check if the active block hit ground or other blocks
     bool CheckCollide() {
 
-		for(int i=0; i < mActiveBlock.mLength; i++) {
-			int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
-			int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
-			if (y == 0) //Hit bottom
-				return true;
-			else
-				if(mTetrisState[x, y - 1])  //Hit others
-					return true;
-		}
-		return false;
+        for(int i = 0; i < mActiveBlock.mLength; i++) {
+            // Get coordinate
+            int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
+            int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
+
+            if (y == 0) 
+                return true; // Hit bottom
+            else
+                if(mTetrisState[x, y - 1]) // Hit others
+                    return true;
+        }
+        return false;
     }
 
     //--------------------------------------------------------------------------
-    //Apply the collision here
+    // Apply the collision here
     void MarkCollide() {
 
         int minY = MaxBlocksHeight;
-		for(int i=0; i < mActiveBlock.mLength; i++) {
-			int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
-			int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
-            //Pass the active block to global blocks
-			mTetrisState[x, y] = true;
-        	mBlockObjects[x, y] = mActiveBlock.mBlockObjects[i];
-
+        // Make the active block on the ground
+        for(int i=0; i < mActiveBlock.mLength; i++) {
+            int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
+            int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
+            // Pass the active block to global blocks
+            mTetrisState[x, y] = true;
+            mGameBlockObjects[x, y] = mActiveBlock.mBlockObjects[i];
+            // Score depends on minY
             if (y < minY)
-                minY = y; //Score depends on minY
-		}
-        //Score calculate here
+                minY = y;
+        }
+        //Score calculate here, double the score if fast dropping
         int factor = mIsFastDropping ? 2 : 1;
         mScore += ((minY + 1) * (mLevel + 1) * factor);
     }
 
     //--------------------------------------------------------------------------
-    //Chech if some row finished, from top to bottom
+    // Chech if there is any row finished, from top to bottom
     void CheckRow() {
 
-        int checkedRow = 0;
+        int finishedRows = 0;
+        // Check, collaps and count the finished rows
         for (int i = MaxBlocksHeight - 1; i >= 0; i--) {
-            bool RowFinished = true;
+            bool finished = true;
+            // Check if there is an empty block in this line
             for (int j = 0; j < MaxBlocksWidth; j++)
-                if (mTetrisState[j, i] == false) //Empty block
-                    RowFinished = false;
-            if (RowFinished) {
-                CollapsRow(i); //Line i finished
-                checkedRow++;
+                if (mTetrisState[j, i] == false)
+                    finished = false;
+            // Collaps this line right away if it's finished
+            if (finished) {
+                CollapsRow(i);
+                finishedRows++;
             }
         }
 
-        //Update game level if some lines finshed
-        if (checkedRow > 0)
-            mFinishedRows += checkedRow;
+        // Update finished rows count
+        if (finishedRows > 0)
+            mFinishedRows += finishedRows;
+        // Update level and speed
         if (mFinishedRows > RowsToNextLevel * (mLevel + 1)) {
             mLevel++;
             mSpeed -= mSpeedIncrement;
@@ -328,101 +361,136 @@ public class GameManager : MonoBehaviour {
     }
 
     //--------------------------------------------------------------------------
-    //when row finished
+    // when a row finished
     void CollapsRow(int row) {
+
+        // Destory the blocks gameObject in the row one by one
         for (int i = 0; i < MaxBlocksWidth;i++ )
-            Object.Destroy(mBlockObjects[i, row]);
-        for (int j = row; j < MaxBlocksHeight-1;j++ )
-            for (int i = 0; i < MaxBlocksWidth;i++ ){
+            Object.Destroy(mGameBlockObjects[i, row]);
+
+        // Move the above blocks down once orderly
+        for (int j = row; j < MaxBlocksHeight - 1; j++)
+            for (int i = 0; i < MaxBlocksWidth; i++) {
+                // Update state
                 mTetrisState[i, j] = mTetrisState[i, j + 1];
-                mBlockObjects[i, j] = mBlockObjects[i, j + 1];
-                if (mBlockObjects[i, j] != null) {
-                    Vector3 pos = mBlockObjects[i, j].transform.position;
-                    mBlockObjects[i, j].transform.position = new Vector3(pos.x, pos.y - 1, pos.z);
+                // Update pointer
+                mGameBlockObjects[i, j] = mGameBlockObjects[i, j + 1];
+                // Update position if there is gameObject
+                if (mGameBlockObjects[i, j] != null) {
+                    Vector3 pos = mGameBlockObjects[i, j].transform.position;
+                    mGameBlockObjects[i, j].transform.position = new Vector3(pos.x, pos.y - 1, pos.z);
                 }
-            }//for i
+            }
     }
 
     //--------------------------------------------------------------------------
+    // The action to try to move the active block left once
     bool MoveLeft() {
-		bool move = true;
-		for(int i=0;i<mActiveBlock.mLength;i++) {
-			Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
-			if (mActiveBlock.mBlockObjects[i].transform.position.x <= 0
-                    || mTetrisState[((int)pos.x-1),(int)pos.y]==true) {
-				move = false;
-				break;
-			}
-		}
-		if(move) {
-			for(int i=0;i<mActiveBlock.mLength;i++) {
-				Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
-				mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);
-			}
-			mActiveBlock.mPos = new Vector3(mActiveBlock.mPos.x-1,mActiveBlock.mPos.y,0);
-		}
-        return move;
+
+        bool canMove = true;
+        // Check if it can move left
+        for (int i = 0;i < mActiveBlock.mLength; i++) {
+            Vector3 blockPos = mActiveBlock.mBlockObjects[i].transform.position;
+            if (mActiveBlock.mBlockObjects[i].transform.position.x <= 0
+                    || mTetrisState[((int)blockPos.x - 1), (int)blockPos.y]) {
+                canMove = false;
+                break;
+            }
+        }
+        // Start to move
+        if(canMove) {
+            // Move blocks
+            for(int i = 0; i < mActiveBlock.mLength; i++) {
+                Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
+                mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);
+            }
+            // Update logic position
+            mActiveBlock.mPos = new Vector3(mActiveBlock.mPos.x - 1, mActiveBlock.mPos.y, 0);
+        }
+
+        return canMove;
     }
     
     //--------------------------------------------------------------------------
+    // The action to try to move the active block right once
     bool MoveRight() {
-		bool move = true;
-		for(int i=0;i<mActiveBlock.mLength;i++) {
-			Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
-			if (mActiveBlock.mBlockObjects[i].transform.position.x >= MaxBlocksWidth-1
-                    || mTetrisState[((int)pos.x+1),(int)pos.y]==true) {
-				move = false;
-				break;
-			}
-		}
-		if(move) {
-			for(int i=0;i<mActiveBlock.mLength;i++) {
-				Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
-				mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);
-			}
-			mActiveBlock.mPos = new Vector3(mActiveBlock.mPos.x+1,mActiveBlock.mPos.y,0);
-		}
-        return move;
-    }
-	
-    //--------------------------------------------------------------------------
-	void Rotate() {
-        bool doRotate = true;
-        int nLeft = 0;
-        int nRight = 0;
-        //We need to check if it can be rotated first
-        for (int i=0;i<mActiveBlock.mSize;i++)
-            for (int j = 0; j < mActiveBlock.mSize;j++ ) {
-                while(mActiveBlock.mPos.x<0)
-                    if(!MoveRight()) {
-                        doRotate = false;
-                        break;
-                    }
-                    else
-                        nRight++;
-                while(mActiveBlock.mPos.x+mActiveBlock.mSize>MaxBlocksWidth)
-                    if(!MoveLeft()){
-                        doRotate = false;
-                        break;
-                    }
-                    else
-                        nLeft++;
-                if (!doRotate || mActiveBlock.mPos.y-mActiveBlock.mSize<=0 ||mTetrisState[(int)mActiveBlock.mPos.x+i,(int)mActiveBlock.mPos.y-j])
-                    doRotate = false;
-            }
-        if (doRotate)
-            mActiveBlock.Rotate();
-        else {  //if it can't rotate, then move back
-            while(nLeft>0) {
-                MoveRight();
-                nLeft--;
-            }
-            while(nRight>0) {
-                MoveLeft();
-                nRight--;
+
+        bool canMove = true;
+        // Check if it can move right
+        for(int i = 0; i < mActiveBlock.mLength; i++) {
+            Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
+            if (mActiveBlock.mBlockObjects[i].transform.position.x >= MaxBlocksWidth - 1
+                    || mTetrisState[((int)pos.x + 1),(int)pos.y]) {
+                canMove = false;
+                break;
             }
         }
-	}
+        // Start to move
+        if(canMove) {
+            // Move blocks
+            for(int i = 0; i < mActiveBlock.mLength; i++) {
+                Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
+                mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);
+            }
+            // Update logic position
+            mActiveBlock.mPos = new Vector3(mActiveBlock.mPos.x + 1, mActiveBlock.mPos.y, 0);
+        }
+        return canMove;
+    }
+    
+    //--------------------------------------------------------------------------
+    // Rotate the Block
+    void Rotate() {
+
+        bool canRotate = true;
+        int leftMoved = 0;
+        int rightMoved = 0;
+
+        // We need to check if it can rotate firstly
+        // If it sticks on the left side
+        while(mActiveBlock.mPos.x < 0)
+            if(!MoveRight()) {
+                canRotate = false;
+                break;
+            }
+            else
+                rightMoved++; // Need move back to rotate
+
+        // If it sticks on the right side
+        while(mActiveBlock.mPos.x + mActiveBlock.mSize > MaxBlocksWidth)
+            if(!MoveLeft()){
+                canRotate = false;
+                break;
+            }
+            else
+                leftMoved++; // Need move back to rotate
+
+        // Check if it will potentially hit ground or other blocks
+        if (canRotate) {
+            for (int i = 0; i < mActiveBlock.mSize; i++)
+                for (int j = 0; j < mActiveBlock.mSize; j++) {
+                    //TODO : This may have problem in some specific situation
+                    if (mActiveBlock.mPos.y - mActiveBlock.mSize <= 0 ||
+                            mTetrisState[(int)mActiveBlock.mPos.x + i,(int)mActiveBlock.mPos.y - j])
+                        canRotate = false;
+                }
+        }
+
+        // Start to rotate
+        if (canRotate)
+            mActiveBlock.Rotate();
+        else {
+        //if it still can't rotate, then recover the scene
+            while(leftMoved > 0) {
+                MoveRight();
+                leftMoved--;
+            }
+            while(rightMoved > 0) {
+                MoveLeft();
+                rightMoved--;
+            }
+        }
+    }
 
     //--------------------------------------------------------------------------
 }
