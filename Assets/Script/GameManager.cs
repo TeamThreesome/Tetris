@@ -29,6 +29,7 @@ public class GameManager : MonoBehaviour {
     //Game status
     float mSpeed = 0.5f; //time interval of game update - in seconds    //TODO : Change to mTickingTime
     bool mIsGameFinished = false;
+    bool mIsGamePaused = false;
     bool mIsFastDropping = false;
     bool mAllowFastDropping = false; //Shouldn't continue fast dropping from next block
     int mNextBlockType = 0;
@@ -44,6 +45,8 @@ public class GameManager : MonoBehaviour {
     Block           mActiveBlock;   //The moving one block
     Block           mPreviewBlock;  //The block for preview
 
+    AudioSource mAudioPlayer;
+
     float leftMoveGap;
     float leftMoveInterval;
     float rightMoveGap;
@@ -54,6 +57,8 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     // Use this for initialization
     void Start() {  
+
+        mAudioPlayer = GameObject.Find("Main Camera").GetComponent<AudioSource>();
 
         mBlockPrefab = (GameObject)Resources.Load("Cube");
 
@@ -101,6 +106,7 @@ public class GameManager : MonoBehaviour {
     void RestartGame() {
         //Reset all the state
         mIsGameFinished = false;
+        mIsGamePaused = false;
         mScore = 0;
         mLevel = 0;
         mFinishedRows = 0;
@@ -109,6 +115,15 @@ public class GameManager : MonoBehaviour {
         Init();
         GenerateNextBlockType(); // Get first block type
         SpawnBlock();
+        RestartBackgroundMusic();
+    }
+
+    //--------------------------------------------------------------------------
+    void FinishGame() {
+        PauseOrResumeBackgroundMusic();
+        mIsGameFinished = true;
+        foreach (GameObject obj in mActiveBlock.mBlockObjects)
+            Object.Destroy(obj);
     }
 
     //--------------------------------------------------------------------------
@@ -117,7 +132,7 @@ public class GameManager : MonoBehaviour {
         for (int i = 0; i < MaxBlocksWidth; i++)
             for (int j = 0; j < MaxBlocksHeight; j++) {
                 mTetrisState[i, j] = false;
-                if(mGameBlockObjects[i,j] != null)
+                if (mGameBlockObjects[i,j] != null)
                     Object.Destroy(mGameBlockObjects[i,j]);
                 mGameBlockObjects[i, j] = null;
             }
@@ -129,7 +144,7 @@ public class GameManager : MonoBehaviour {
         mNextBlockType = (int)Random.Range(0, BlockTypes);
 
         // Random color for block
-        mNextBlockColor = new Color();    
+        mNextBlockColor = new Color();
         mNextBlockColor.r = Random.Range(0f, 1f);
         mNextBlockColor.g = Random.Range(0f, 1f);
         mNextBlockColor.b = Random.Range(0f, 1f);
@@ -143,10 +158,8 @@ public class GameManager : MonoBehaviour {
         mActiveBlock.Init(mBlocksData[mNextBlockType], mBlockPrefab, mStartPosition, mNextBlockColor);
 
         //Check the if game is finished
-        if(CheckCollide()) {
-            mIsGameFinished = true;
-            foreach(GameObject obj in mActiveBlock.mBlockObjects)
-                Object.Destroy(obj);
+        if (CheckCollide()) {
+            FinishGame();
         }
         else {
             GenerateNextBlockType();    // Get next block type
@@ -164,49 +177,43 @@ public class GameManager : MonoBehaviour {
         GUI.enabled = true;
 
         string text;
-        //Game finished
-        if(mIsGameFinished) {
-
-            GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 50));
-
+        // Game finished
+        if (mIsGameFinished) {
+            GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 150));
             text = "Game Finished";
             GUILayout.Box(text);
-
             text = "Your Score" + mScore;
             GUILayout.Box(text);
-
             if(GUILayout.Button("Start a New Game")) {
                 RestartGame();
             }
-
             GUILayout.EndArea();
         }
-        //Game is running
+        // Game is running
         else {
-
+            if (mIsGamePaused) {
+                GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 50));
+                text = "Game Paused";
+                GUILayout.Box(text);
+                GUILayout.EndArea();
+            }
             GUILayout.BeginArea(new Rect(10, 10, 100, 200));
-
             text = "Score : " + mScore;
             GUILayout.TextArea(text);
-
             text = "Rows :" + mFinishedRows;
             GUILayout.TextArea(text);
-
             text = "Level : " + mLevel;
             GUILayout.TextArea(text);
-
             text = "Speed : " + mSpeed;
             GUILayout.TextArea(text);
-
             text = "Next Type : " + mNextBlockType;
             GUILayout.TextArea(text);
-
             GUILayout.EndArea();
         }
     }
 
     //--------------------------------------------------------------------------
-    //Finish active block
+    // Finish active block
     void CollideActiveBlock() {
 
         MarkCollide();              // Collide current one
@@ -219,10 +226,10 @@ public class GameManager : MonoBehaviour {
     }
     
     //--------------------------------------------------------------------------
-    //Drop the active block
+    // Drop the active block
     void UpdateActiveBlock() {
 
-        if(!mIsGameFinished)
+        if (!mIsGameFinished && !mIsGamePaused)
             if (CheckCollide())
                 CollideActiveBlock();       //Collide
             else
@@ -230,12 +237,36 @@ public class GameManager : MonoBehaviour {
     }
 
     //--------------------------------------------------------------------------
-    //Here are all the controls
+    void PauseOrResumeBackgroundMusic() {
+        if (mAudioPlayer == null)
+            return;
+        if (mAudioPlayer.isPlaying) {
+            mAudioPlayer.Pause();
+        }
+        else {
+            mAudioPlayer.Play();
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    void RestartBackgroundMusic() {
+        if (mAudioPlayer == null)
+            return;
+        mAudioPlayer.Stop();
+        mAudioPlayer.Play();
+    }
+
+    //--------------------------------------------------------------------------
+    // Here are all the controls
     void Update() {
-        if(mIsGameFinished)
+        if (Input.GetKeyDown("escape")) {
+            mIsGamePaused = !mIsGamePaused;
+            PauseOrResumeBackgroundMusic();
+        }
+        if (mIsGameFinished || mIsGamePaused)
             return;
         //Rotation
-        if(Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
+        if (Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
             Rotate();
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
@@ -296,7 +327,7 @@ public class GameManager : MonoBehaviour {
     // Check if the active block hit ground or other blocks
     bool CheckCollide() {
 
-        for(int i = 0; i < mActiveBlock.mLength; i++) {
+        for (int i = 0; i < mActiveBlock.mLength; i++) {
             // Get coordinate
             int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
             int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
@@ -304,7 +335,7 @@ public class GameManager : MonoBehaviour {
             if (y == 0) 
                 return true; // Hit bottom
             else
-                if(mTetrisState[x, y - 1]) // Hit others
+                if (mTetrisState[x, y - 1]) // Hit others
                     return true;
         }
         return false;
@@ -316,7 +347,7 @@ public class GameManager : MonoBehaviour {
 
         int minY = MaxBlocksHeight;
         // Make the active block on the ground
-        for(int i=0; i < mActiveBlock.mLength; i++) {
+        for (int i=0; i < mActiveBlock.mLength; i++) {
             int x = (int)mActiveBlock.mBlockObjects[i].transform.position.x;
             int y = (int)mActiveBlock.mBlockObjects[i].transform.position.y;
             // Pass the active block to global blocks
@@ -398,9 +429,9 @@ public class GameManager : MonoBehaviour {
             }
         }
         // Start to move
-        if(canMove) {
+        if (canMove) {
             // Move blocks
-            for(int i = 0; i < mActiveBlock.mLength; i++) {
+            for (int i = 0; i < mActiveBlock.mLength; i++) {
                 Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
                 mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);
             }
@@ -417,7 +448,7 @@ public class GameManager : MonoBehaviour {
 
         bool canMove = true;
         // Check if it can move right
-        for(int i = 0; i < mActiveBlock.mLength; i++) {
+        for (int i = 0; i < mActiveBlock.mLength; i++) {
             Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
             if (mActiveBlock.mBlockObjects[i].transform.position.x >= MaxBlocksWidth - 1
                     || mTetrisState[((int)pos.x + 1),(int)pos.y]) {
@@ -426,9 +457,9 @@ public class GameManager : MonoBehaviour {
             }
         }
         // Start to move
-        if(canMove) {
+        if (canMove) {
             // Move blocks
-            for(int i = 0; i < mActiveBlock.mLength; i++) {
+            for (int i = 0; i < mActiveBlock.mLength; i++) {
                 Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
                 mActiveBlock.mBlockObjects[i].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);
             }
@@ -448,8 +479,8 @@ public class GameManager : MonoBehaviour {
 
         // We need to check if it can rotate firstly
         // If it sticks on the left side
-        while(mActiveBlock.mPos.x < 0)
-            if(!MoveRight()) {
+        while (mActiveBlock.mPos.x < 0)
+            if (!MoveRight()) {
                 canRotate = false;
                 break;
             }
@@ -457,8 +488,8 @@ public class GameManager : MonoBehaviour {
                 rightMoved++; // Need move back to rotate
 
         // If it sticks on the right side
-        while(mActiveBlock.mPos.x + mActiveBlock.mSize > MaxBlocksWidth)
-            if(!MoveLeft()){
+        while (mActiveBlock.mPos.x + mActiveBlock.mSize > MaxBlocksWidth)
+            if (!MoveLeft()){
                 canRotate = false;
                 break;
             }
@@ -481,11 +512,11 @@ public class GameManager : MonoBehaviour {
             mActiveBlock.Rotate();
         else {
         //if it still can't rotate, then recover the scene
-            while(leftMoved > 0) {
+            while (leftMoved > 0) {
                 MoveRight();
                 leftMoved--;
             }
-            while(rightMoved > 0) {
+            while (rightMoved > 0) {
                 MoveLeft();
                 rightMoved--;
             }
