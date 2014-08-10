@@ -1,5 +1,6 @@
 # Unity .gitignore file.
 .DS_Store
+.sublime-workspace
 Library/
 *.csproj
 *.sln
