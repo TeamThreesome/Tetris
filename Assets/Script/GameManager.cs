@@ -287,10 +287,10 @@ public class GameManager : MonoBehaviour {
             GUILayout.TextArea(text);
             text = "Level : " + mLevel;
             GUILayout.TextArea(text);
-            text = "Speed : " + mSpeed;
-            GUILayout.TextArea(text);
-            text = "Next Type : " + mNextBlockType;
-            GUILayout.TextArea(text);
+            // text = "Speed : " + mSpeed;
+            // GUILayout.TextArea(text);
+            // text = "Next Type : " + mNextBlockType;
+            // GUILayout.TextArea(text);
             GUILayout.EndArea();
         }
         //Draw Score board
