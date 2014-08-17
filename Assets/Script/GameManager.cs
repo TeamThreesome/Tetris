@@ -5,6 +5,8 @@
 //------------------------------------------------------------------------------
 using UnityEngine;
 using System.Collections;
+using System.Text;
+using System.Security;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -13,6 +15,11 @@ using Random = UnityEngine.Random;
 public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
+    //High Score
+    const string secretKey = "ownselftetris";
+    const string HighScoreUrl = "http://www.ownself.org/threesome/Tetris/highscore.php";
+    private string mResult = "";
+    string mName = "Input your name";
 
     //Const
     const int MaxBlocksWidth  = 10; //max number of blocks horizontally
@@ -54,6 +61,73 @@ public class GameManager : MonoBehaviour {
     float droppingGap;
     float droppingInterval;
 
+    public string Md5Sum(string input)
+    {
+        System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
+        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+        byte[] hash = md5.ComputeHash(inputBytes);
+ 
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < hash.Length; i++)
+        {
+            sb.Append(hash[i].ToString("X2"));
+        }
+        return sb.ToString();
+    }
+
+    IEnumerator PostScore(string name, int level, int score)
+    {
+        string _name = name;
+        int _level = level;
+        int _score = score;
+        
+        string hash = Md5Sum(_name + _level + _score + secretKey).ToLower();
+        
+        WWWForm form = new WWWForm();
+        form.AddField("do","posthighscore");
+        form.AddField("playername",_name);
+        form.AddField("level",_level);
+        form.AddField("score",_score);
+        form.AddField("hash",hash);
+        
+        WWW www = new WWW(HighScoreUrl ,form);
+        yield return www;
+        
+        if(www.text == "done") 
+        {
+            // StartCoroutine("GetScore");
+            RestartGame();
+        }
+        else 
+        {
+            Debug.Log(www.error);
+        }
+    }
+
+    IEnumerator GetScore()
+    {
+        mResult = "";
+            
+        // WindowTitel = "Loading";
+        
+        WWWForm form = new WWWForm();
+        form.AddField("do","gethighscore");
+        form.AddField("limit", 10);
+        
+        WWW www = new WWW(HighScoreUrl,form);
+        yield return www;
+        
+        if(www.text == "") 
+        {
+            print("There was an error getting the high score: " + www.error);
+            // WindowTitel = "There was an error getting the high score";
+            Debug.Log("There was an error getting the high score");
+        }
+        else 
+        {
+            mResult = www.text;
+        }
+    }
     //--------------------------------------------------------------------------
     // Use this for initialization
     void Start() {  
@@ -116,6 +190,7 @@ public class GameManager : MonoBehaviour {
         GenerateNextBlockType(); // Get first block type
         SpawnBlock();
         RestartBackgroundMusic();
+        StartCoroutine("GetScore");
     }
 
     //--------------------------------------------------------------------------
@@ -182,11 +257,19 @@ public class GameManager : MonoBehaviour {
             GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 150));
             text = "Game Finished";
             GUILayout.Box(text);
-            text = "Your Score" + mScore;
-            GUILayout.Box(text);
             if(GUILayout.Button("Start a New Game")) {
                 RestartGame();
             }
+
+            mName = GUILayout.TextField(mName, 10);
+            text = "Your Score" + mScore;
+            GUILayout.Box(text);
+            
+            if (GUILayout.Button("Post Score"))
+            {
+                StartCoroutine(PostScore(mName, mLevel, mScore));
+            }
+
             GUILayout.EndArea();
         }
         // Game is running
@@ -210,6 +293,26 @@ public class GameManager : MonoBehaviour {
             GUILayout.TextArea(text);
             GUILayout.EndArea();
         }
+        //Draw Score board
+        ShowHighScoreBoard();
+    }
+
+    void ShowHighScoreBoard() {
+
+        string[] lines;
+        lines = mResult.Split('\n');
+
+        GUILayout.BeginArea(new Rect(Screen.width * 7 / 10, Screen.height / 4, Screen.width - 10, Screen.height - 5));
+        for (int i = 0; i < lines.Length - 1; ++i) {
+            string[] scores = lines[i].Split(',');
+            GUILayout.BeginHorizontal(GUILayout.Width(150));
+            GUILayout.Box(""+(i+1), GUILayout.MaxWidth(20));
+            for (int j = 0; j < scores.Length; ++j) {
+                GUILayout.Box(scores[j]);
+            }
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndArea();
     }
 
     //--------------------------------------------------------------------------
@@ -238,7 +341,7 @@ public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
     void PauseOrResumeBackgroundMusic() {
-        if (mAudioPlayer == null)
+        if (mAudioPlayer == null || !mAudioPlayer.enabled)
             return;
         if (mAudioPlayer.isPlaying) {
             mAudioPlayer.Pause();
@@ -250,7 +353,7 @@ public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
     void RestartBackgroundMusic() {
-        if (mAudioPlayer == null)
+        if (mAudioPlayer == null || !mAudioPlayer.enabled)
             return;
         mAudioPlayer.Stop();
         mAudioPlayer.Play();
