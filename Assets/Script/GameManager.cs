@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour {
     const int MaxBlocksWidth  = 10; //max number of blocks horizontally
     const int MaxBlocksHeight = 22; //max number of blocks vertically
     const int BlockTypes      = 7;
-    const int RowsToNextLevel = 30;
+    const int RowsToNextLevel = 10;
     const float mSpeedIncrement = 0.05f; //speed every time increased
 
     //Player status
@@ -90,7 +90,7 @@ public class GameManager : MonoBehaviour {
         form.AddField("score",_score);
         form.AddField("hash",hash);
         
-        WWW www = new WWW(HighScoreUrl ,form);
+        WWW www = new WWW(HighScoreUrl, form);
         yield return www;
         
         if(www.text == "done") 
@@ -114,7 +114,7 @@ public class GameManager : MonoBehaviour {
         form.AddField("do","gethighscore");
         form.AddField("limit", 10);
         
-        WWW www = new WWW(HighScoreUrl,form);
+        WWW www = new WWW(HighScoreUrl, form);
         yield return www;
         
         if(www.text == "") 
@@ -220,9 +220,9 @@ public class GameManager : MonoBehaviour {
 
         // Random color for block
         mNextBlockColor = new Color();
-        mNextBlockColor.r = Random.Range(0f, 1f);
-        mNextBlockColor.g = Random.Range(0f, 1f);
-        mNextBlockColor.b = Random.Range(0f, 1f);
+        mNextBlockColor.r = Random.Range(0.3f, 1f);
+        mNextBlockColor.g = Random.Range(0.3f, 1f);
+        mNextBlockColor.b = Random.Range(0.3f, 1f);
         mNextBlockColor.a = 1.0f; // Opacity
     }
 
@@ -462,7 +462,7 @@ public class GameManager : MonoBehaviour {
         }
         //Score calculate here, double the score if fast dropping
         int factor = mIsFastDropping ? 2 : 1;
-        mScore += ((minY + 1) * (mLevel + 1) * factor);
+        mScore += ((minY + 1) * (mLevel + 1) * (mLevel + 1) * factor);
     }
 
     //--------------------------------------------------------------------------
