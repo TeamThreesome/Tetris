@@ -77,6 +77,9 @@ public class GameManager : MonoBehaviour {
 
     IEnumerator PostScore(string name, int level, int score)
     {
+        if (name == "")
+            yield break;
+
         string _name = name;
         int _level = level;
         int _score = score;
@@ -257,17 +260,21 @@ public class GameManager : MonoBehaviour {
             GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 150));
             text = "Game Finished";
             GUILayout.Box(text);
-            if(GUILayout.Button("Start a New Game")) {
-                RestartGame();
-            }
+            GUILayout.Space(20);
 
-            mName = GUILayout.TextField(mName, 10);
-            text = "Your Score" + mScore;
+            text = "Your Score : " + mScore;
             GUILayout.Box(text);
-            
+
+            GUIStyle textFieldStyle = new GUIStyle("textfield");
+            textFieldStyle.alignment  = TextAnchor.MiddleCenter;
+            mName = GUILayout.TextField(mName, 15, textFieldStyle);
+
             if (GUILayout.Button("Post Score"))
             {
                 StartCoroutine(PostScore(mName, mLevel, mScore));
+            }
+            if(GUILayout.Button("Start a New Game")) {
+                RestartGame();
             }
 
             GUILayout.EndArea();
@@ -302,14 +309,19 @@ public class GameManager : MonoBehaviour {
         string[] lines;
         lines = mResult.Split('\n');
 
-        GUILayout.BeginArea(new Rect(Screen.width * 7 / 10, Screen.height / 4, Screen.width - 10, Screen.height - 5));
+        GUILayout.BeginArea(new Rect(Screen.width * 0.65f, Screen.height / 4, Screen.width - 10, Screen.height - 5));
+        GUIStyle leftyBoxStyle = new GUIStyle("box");
+        leftyBoxStyle.alignment  = TextAnchor.MiddleLeft;
+        GUIStyle rightyBoxStyle = new GUIStyle("box");
+        rightyBoxStyle.alignment  = TextAnchor.MiddleRight;
         for (int i = 0; i < lines.Length - 1; ++i) {
             string[] scores = lines[i].Split(',');
             GUILayout.BeginHorizontal(GUILayout.Width(150));
             GUILayout.Box(""+(i+1), GUILayout.MaxWidth(20));
-            for (int j = 0; j < scores.Length; ++j) {
-                GUILayout.Box(scores[j]);
-            }
+            // for (int j = 0; j < scores.Length; ++j) {
+            GUILayout.Box(scores[0], leftyBoxStyle);
+            GUILayout.Box(scores[1], rightyBoxStyle);
+            // }
             GUILayout.EndHorizontal();
         }
         GUILayout.EndArea();
