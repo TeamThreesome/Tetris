@@ -316,7 +316,7 @@ public class GameManager : MonoBehaviour {
         rightyBoxStyle.alignment  = TextAnchor.MiddleRight;
         for (int i = 0; i < lines.Length - 1; ++i) {
             string[] scores = lines[i].Split(',');
-            GUILayout.BeginHorizontal(GUILayout.Width(150));
+            GUILayout.BeginHorizontal(GUILayout.Width(200));
             GUILayout.Box(""+(i+1), GUILayout.MaxWidth(20));
             // for (int j = 0; j < scores.Length; ++j) {
             GUILayout.Box(scores[0], leftyBoxStyle);
