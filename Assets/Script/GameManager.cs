@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour {
     const int MaxBlocksWidth  = 10; //max number of blocks horizontally
     const int MaxBlocksHeight = 22; //max number of blocks vertically
     const int BlockTypes      = 7;
-    const int RowsToNextLevel = 10;
+    const int UnitRowsToNextLevel = 3;
     const float mSpeedIncrement = 0.05f; //speed every time increased
 
     //Player status
@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour {
     bool mIsFastDropping = false;
     bool mAllowFastDropping = false; //Shouldn't continue fast dropping from next block
     int mNextBlockType = 0;
+    int RowsToNextLevel = UnitRowsToNextLevel;
     Color mNextBlockColor;
 
     //Game content variables
@@ -77,7 +78,7 @@ public class GameManager : MonoBehaviour {
 
     IEnumerator PostScore(string name, int level, int score)
     {
-        if (name == "")
+        if (name == "" || name == "Input your name")
             yield break;
 
         string _name = name;
@@ -233,7 +234,9 @@ public class GameManager : MonoBehaviour {
     void SpawnBlock() {
         //Create next block
         mActiveBlock = new Block();
-        mActiveBlock.Init(mBlocksData[mNextBlockType], mBlockPrefab, mStartPosition, mNextBlockColor);
+        int halfSize = (int)(mBlocksData[mNextBlockType].mSize / 2);
+        Vector3 startPosition = new Vector3(mStartPosition.x - halfSize, mStartPosition.y, 0);
+        mActiveBlock.Init(mBlocksData[mNextBlockType], mBlockPrefab, startPosition, mNextBlockColor);
 
         //Check the if game is finished
         if (CheckCollide()) {
@@ -391,7 +394,7 @@ public class GameManager : MonoBehaviour {
             leftMoveGap += Time.deltaTime;
             if (leftMoveGap > 0.2) {
                 leftMoveInterval += Time.deltaTime;
-                if (leftMoveInterval > 0.1) {
+                if (leftMoveInterval > 0.1 - 0.01 * mLevel) {
                     leftMoveInterval = 0;
                     MoveLeft();
                 }
@@ -406,7 +409,7 @@ public class GameManager : MonoBehaviour {
             rightMoveGap += Time.deltaTime;
             if (rightMoveGap > 0.2) {
                 rightMoveInterval += Time.deltaTime;
-                if (rightMoveInterval > 0.1) {
+                if (rightMoveInterval > 0.1 - 0.01 * mLevel) {
                     rightMoveInterval = 0;
                     MoveRight();
                 }
@@ -482,6 +485,7 @@ public class GameManager : MonoBehaviour {
     void CheckRow() {
 
         int finishedRows = 0;
+        int maxY = 0;
         // Check, collaps and count the finished rows
         for (int i = MaxBlocksHeight - 1; i >= 0; i--) {
             bool finished = true;
@@ -493,15 +497,20 @@ public class GameManager : MonoBehaviour {
             if (finished) {
                 CollapsRow(i);
                 finishedRows++;
+                if (i > maxY)
+                    maxY = i;
             }
         }
 
         // Update finished rows count
-        if (finishedRows > 0)
+        if (finishedRows > 0) {
             mFinishedRows += finishedRows;
+            mScore += finishedRows * finishedRows * (mLevel + 1) * (mLevel + 1) * (maxY + 1);
+        }
         // Update level and speed
-        if (mFinishedRows > RowsToNextLevel * (mLevel + 1)) {
+        if (mFinishedRows > RowsToNextLevel) {
             mLevel++;
+            RowsToNextLevel += UnitRowsToNextLevel * (mLevel + 1);
             mSpeed -= mSpeedIncrement;
         }
     }
