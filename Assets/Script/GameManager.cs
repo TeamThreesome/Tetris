@@ -385,8 +385,12 @@ public class GameManager : MonoBehaviour {
         if (mIsGameFinished || mIsGamePaused)
             return;
         //Rotation
-        if (Input.GetKeyDown("space") || Input.GetKeyDown("up") || Input.GetKeyDown("w"))
-            Rotate();
+        if (Input.GetKeyDown("space") || Input.GetKeyDown("w")) {
+            Rotate(false);
+        } else if (Input.GetKeyDown("up")) {
+            Rotate(true);
+        }
+
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
             MoveLeft();
@@ -596,7 +600,7 @@ public class GameManager : MonoBehaviour {
     
     //--------------------------------------------------------------------------
     // Rotate the Block
-    void Rotate() {
+    void Rotate(bool IsClockwise) {
 
         bool canRotate = true;
         int leftMoved = 0;
@@ -634,7 +638,7 @@ public class GameManager : MonoBehaviour {
 
         // Start to rotate
         if (canRotate)
-            mActiveBlock.Rotate();
+            mActiveBlock.Rotate(IsClockwise);
         else {
         //if it still can't rotate, then recover the scene
             while (leftMoved > 0) {

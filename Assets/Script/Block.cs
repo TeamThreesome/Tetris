@@ -60,14 +60,17 @@ public class Block {
     
     //--------------------------------------------------------------------------
     //TODO : make the rotate nicer
-    public void Rotate() {
+    public void Rotate(bool IsClockwise) {
 
         bool[,] newBlocks = new bool[mSize, mSize];
 
         // Rotate the array
         for (int i = 0; i < mSize; i++) {
             for (int j = 0; j < mSize; j++) {
-                newBlocks[mSize - 1 - j, i] = mBlocks[i, j];
+                if (IsClockwise)
+                    newBlocks[i, j] = mBlocks[mSize - 1 - j, i];
+                else
+                    newBlocks[mSize - 1 - j, i] = mBlocks[i, j];
             }
         }
         mBlocks = newBlocks;
