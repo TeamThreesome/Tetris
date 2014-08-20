@@ -189,6 +189,7 @@ public class GameManager : MonoBehaviour {
         mLevel = 0;
         mFinishedRows = 0;
         mSpeed = 0.5f;
+        RowsToNextLevel = UnitRowsToNextLevel;
         //Reinit the blocks and spawn the first one
         Init();
         GenerateNextBlockType(); // Get first block type
