@@ -7,6 +7,7 @@ using UnityEngine;
 using System.Collections;
 using System.Text;
 using System.Security;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -52,6 +53,17 @@ public class GameManager : MonoBehaviour {
     Vector3         mPreviewPosition = new Vector3(MaxBlocksWidth + 5, MaxBlocksHeight - 1, 0);
     Block           mActiveBlock;   //The moving one block
     Block           mPreviewBlock;  //The block for preview
+
+    //HUD Component
+    Text mScoreTextLable;
+    Text mRowsTextLable;
+    Text mLevelTextLable;
+    //High Score
+    Text mHighScoreOrderLabel;
+    Text mHighScoreNameLabel;
+    Text mHighScoreScoreLabel;
+    //Pause Panel
+    GameObject mPausePanel;
 
     AudioSource mAudioPlayer;
 
@@ -177,14 +189,30 @@ public class GameManager : MonoBehaviour {
         mBlocksData[6].mBlocks = new bool[4, 4] {{false, false, false, false}, {false, false, false,false}, {true, true, true,true}, {false, false, false, false}};
         mBlocksData[6].mLength = 4;
 
+        mScoreTextLable = GameObject.Find("HUD_Score").GetComponent<Text>();
+        mRowsTextLable = GameObject.Find("HUD_Rows").GetComponent<Text>();
+        mLevelTextLable = GameObject.Find("HUD_Level").GetComponent<Text>();
+        mHighScoreOrderLabel = GameObject.Find("HUD_HighScore_Order").GetComponent<Text>();
+        mHighScoreNameLabel = GameObject.Find("HUD_HighScore_Name").GetComponent<Text>();
+        mHighScoreScoreLabel = GameObject.Find("HUD_HighScore_Score").GetComponent<Text>();
+        mPausePanel = GameObject.Find("PausePanel");
+        mPausePanel.SetActive(false);
+
         RestartGame();
+    }
+
+    void PauseGame(bool pause) {
+        mIsGamePaused = pause;
+        if (mPausePanel)
+            mPausePanel.SetActive(pause);
     }
 
     //--------------------------------------------------------------------------
     void RestartGame() {
         //Reset all the state
         mIsGameFinished = false;
-        mIsGamePaused = false;
+        // mIsGamePaused = false;
+        PauseGame(false);
         mScore = 0;
         mLevel = 0;
         mFinishedRows = 0;
@@ -285,24 +313,9 @@ public class GameManager : MonoBehaviour {
         }
         // Game is running
         else {
-            if (mIsGamePaused) {
-                GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 50));
-                text = "Game Paused";
-                GUILayout.Box(text);
-                GUILayout.EndArea();
-            }
-            GUILayout.BeginArea(new Rect(10, 10, 100, 200));
-            text = "Score : " + mScore;
-            GUILayout.TextArea(text);
-            text = "Rows :" + mFinishedRows;
-            GUILayout.TextArea(text);
-            text = "Level : " + mLevel;
-            GUILayout.TextArea(text);
-            // text = "Speed : " + mSpeed;
-            // GUILayout.TextArea(text);
-            // text = "Next Type : " + mNextBlockType;
-            // GUILayout.TextArea(text);
-            GUILayout.EndArea();
+            mScoreTextLable.text = "" + mScore;
+            mRowsTextLable.text = "" + mFinishedRows;
+            mLevelTextLable.text = "" + mLevel;
         }
         //Draw Score board
         ShowHighScoreBoard();
@@ -312,23 +325,20 @@ public class GameManager : MonoBehaviour {
 
         string[] lines;
         lines = mResult.Split('\n');
-
-        GUILayout.BeginArea(new Rect(Screen.width * 0.65f, Screen.height / 4, Screen.width - 10, Screen.height - 5));
-        GUIStyle leftyBoxStyle = new GUIStyle("box");
-        leftyBoxStyle.alignment  = TextAnchor.MiddleLeft;
-        GUIStyle rightyBoxStyle = new GUIStyle("box");
-        rightyBoxStyle.alignment  = TextAnchor.MiddleRight;
+        mHighScoreOrderLabel.text = "";
+        mHighScoreNameLabel.text = "";
+        mHighScoreScoreLabel.text = "";
         for (int i = 0; i < lines.Length - 1; ++i) {
+            if (i != 0) { //line feed
+                mHighScoreOrderLabel.text += "\n";
+                mHighScoreNameLabel.text+= "\n";
+                mHighScoreScoreLabel.text += "\n";
+            }
             string[] scores = lines[i].Split(',');
-            GUILayout.BeginHorizontal(GUILayout.Width(200));
-            GUILayout.Box(""+(i+1), GUILayout.MaxWidth(20));
-            // for (int j = 0; j < scores.Length; ++j) {
-            GUILayout.Box(scores[0], leftyBoxStyle);
-            GUILayout.Box(scores[1], rightyBoxStyle);
-            // }
-            GUILayout.EndHorizontal();
+            mHighScoreOrderLabel.text += (i+1);
+            mHighScoreNameLabel.text += scores[0];
+            mHighScoreScoreLabel.text += scores[1];
         }
-        GUILayout.EndArea();
     }
 
     //--------------------------------------------------------------------------
@@ -379,7 +389,8 @@ public class GameManager : MonoBehaviour {
     // Here are all the controls
     void Update() {
         if (Input.GetKeyDown("escape")) {
-            mIsGamePaused = !mIsGamePaused;
+            // mIsGamePaused = !mIsGamePaused;
+            PauseGame(!mIsGamePaused);
             PauseOrResumeBackgroundMusic();
         }
         if (mIsGameFinished || mIsGamePaused)
