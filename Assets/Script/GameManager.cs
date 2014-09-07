@@ -64,6 +64,8 @@ public class GameManager : MonoBehaviour {
     Text mHighScoreScoreLabel;
     //Pause Panel
     GameObject mPausePanel;
+    //Game End Panel
+    GameObject mGameEndPanel;
 
     AudioSource mAudioPlayer;
 
@@ -86,6 +88,9 @@ public class GameManager : MonoBehaviour {
             sb.Append(hash[i].ToString("X2"));
         }
         return sb.ToString();
+    }
+    public void StartPostScore() {
+        StartCoroutine(PostScore(mName, mLevel, mScore));
     }
 
     IEnumerator PostScore(string name, int level, int score)
@@ -197,6 +202,8 @@ public class GameManager : MonoBehaviour {
         mHighScoreScoreLabel = GameObject.Find("HUD_HighScore_Score").GetComponent<Text>();
         mPausePanel = GameObject.Find("PausePanel");
         mPausePanel.SetActive(false);
+        mGameEndPanel = GameObject.Find("GameEndPanel");
+        mGameEndPanel.SetActive(false);
 
         RestartGame();
     }
@@ -208,7 +215,7 @@ public class GameManager : MonoBehaviour {
     }
 
     //--------------------------------------------------------------------------
-    void RestartGame() {
+    public void RestartGame() {
         //Reset all the state
         mIsGameFinished = false;
         // mIsGamePaused = false;
@@ -282,37 +289,24 @@ public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
     //Show score here
-    void OnGUI() {
+    void UpdateHUD() {
 
         GUI.enabled = true;
 
-        string text;
         // Game finished
         if (mIsGameFinished) {
-            GUILayout.BeginArea(new Rect(Screen.width/2 - 75, Screen.height/2 - 25, 150, 150));
-            text = "Game Finished";
-            GUILayout.Box(text);
-            GUILayout.Space(20);
+            mGameEndPanel.SetActive(true);
+            Text finishedScoreLabel = GameObject.Find("HUD_FinishedScore").GetComponent<Text>();
+            finishedScoreLabel.text = "Game Finished";
+            finishedScoreLabel.text += "\nYour Score : "+mScore;
 
-            text = "Your Score : " + mScore;
-            GUILayout.Box(text);
+            Text nameInputerLabel = GameObject.Find("HUD_NameInputLabel").GetComponent<Text>();
+            mName = nameInputerLabel.text;
 
-            GUIStyle textFieldStyle = new GUIStyle("textfield");
-            textFieldStyle.alignment  = TextAnchor.MiddleCenter;
-            mName = GUILayout.TextField(mName, 15, textFieldStyle);
-
-            if (GUILayout.Button("Post Score"))
-            {
-                StartCoroutine(PostScore(mName, mLevel, mScore));
-            }
-            if(GUILayout.Button("Start a New Game")) {
-                RestartGame();
-            }
-
-            GUILayout.EndArea();
         }
         // Game is running
         else {
+            mGameEndPanel.SetActive(false);
             mScoreTextLable.text = "" + mScore;
             mRowsTextLable.text = "" + mFinishedRows;
             mLevelTextLable.text = "" + mLevel;
@@ -388,7 +382,8 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     // Here are all the controls
     void Update() {
-        if (Input.GetKeyDown("escape")) {
+        UpdateHUD();
+        if (Input.GetKeyDown("escape") && !mIsGameFinished) {
             // mIsGamePaused = !mIsGamePaused;
             PauseGame(!mIsGamePaused);
             PauseOrResumeBackgroundMusic();
