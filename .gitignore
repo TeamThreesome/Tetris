@@ -9,3 +9,5 @@ Temp/
 *.pidb
 Build/
 *.mdb
+*.sublime-workspace
+*.sublime-project
