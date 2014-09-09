@@ -5,8 +5,6 @@
 //------------------------------------------------------------------------------
 using UnityEngine;
 using System.Collections;
-using System.Text;
-using System.Security;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -17,10 +15,7 @@ public class GameManager : MonoBehaviour {
 
     //--------------------------------------------------------------------------
     //High Score
-    const string secretKey = "ownselftetris";
-    const string HighScoreUrl = "http://www.ownself.org/threesome/Tetris/highscore.php";
-    private string mResult = "";
-    string mName = "Input your name";
+    private HighScoreComponent mHighScoreBoard;
 
     //Const
     const int MaxBlocksWidth  = 10; //max number of blocks horizontally
@@ -33,6 +28,7 @@ public class GameManager : MonoBehaviour {
     int mScore          = 0;
     int mFinishedRows   = 0;
     int mLevel          = 0;
+    string mName = "Input your name";
 
     //Game status
     float mSpeed = 0.5f; //time interval of game update - in seconds    //TODO : Change to mTickingTime
@@ -76,84 +72,13 @@ public class GameManager : MonoBehaviour {
     float droppingGap;
     float droppingInterval;
 
-    public string Md5Sum(string input)
-    {
-        System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
-        byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-        byte[] hash = md5.ComputeHash(inputBytes);
- 
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < hash.Length; i++)
-        {
-            sb.Append(hash[i].ToString("X2"));
-        }
-        return sb.ToString();
-    }
-    public void StartPostScore() {
-        StartCoroutine(PostScore(mName, mLevel, mScore));
-    }
-
-    IEnumerator PostScore(string name, int level, int score)
-    {
-        if (name == "" || name == "Input your name")
-            yield break;
-
-        string _name = name;
-        int _level = level;
-        int _score = score;
-        
-        string hash = Md5Sum(_name + _level + _score + secretKey).ToLower();
-        
-        WWWForm form = new WWWForm();
-        form.AddField("do","posthighscore");
-        form.AddField("playername",_name);
-        form.AddField("level",_level);
-        form.AddField("score",_score);
-        form.AddField("hash",hash);
-        
-        WWW www = new WWW(HighScoreUrl, form);
-        yield return www;
-        
-        if(www.text == "done") 
-        {
-            // StartCoroutine("GetScore");
-            RestartGame();
-        }
-        else 
-        {
-            Debug.Log(www.error);
-        }
-    }
-
-    IEnumerator GetScore()
-    {
-        mResult = "";
-            
-        // WindowTitel = "Loading";
-        
-        WWWForm form = new WWWForm();
-        form.AddField("do","gethighscore");
-        form.AddField("limit", 10);
-        
-        WWW www = new WWW(HighScoreUrl, form);
-        yield return www;
-        
-        if(www.text == "") 
-        {
-            print("There was an error getting the high score: " + www.error);
-            // WindowTitel = "There was an error getting the high score";
-            Debug.Log("There was an error getting the high score");
-        }
-        else 
-        {
-            mResult = www.text;
-        }
-    }
     //--------------------------------------------------------------------------
     // Use this for initialization
     void Start() {  
 
         mAudioPlayer = GameObject.Find("Main Camera").GetComponent<AudioSource>();
+
+        mHighScoreBoard = GetComponentInParent<HighScoreComponent>();
 
         mBlockPrefab = (GameObject)Resources.Load("Cube");
 
@@ -230,7 +155,7 @@ public class GameManager : MonoBehaviour {
         GenerateNextBlockType(); // Get first block type
         SpawnBlock();
         RestartBackgroundMusic();
-        StartCoroutine("GetScore");
+        StartGetScore();
     }
 
     //--------------------------------------------------------------------------
@@ -318,7 +243,7 @@ public class GameManager : MonoBehaviour {
     void ShowHighScoreBoard() {
 
         string[] lines;
-        lines = mResult.Split('\n');
+        lines = mHighScoreBoard.mResult.Split('\n');
         mHighScoreOrderLabel.text = "";
         mHighScoreNameLabel.text = "";
         mHighScoreScoreLabel.text = "";
@@ -656,6 +581,18 @@ public class GameManager : MonoBehaviour {
                 rightMoved--;
             }
         }
+    }
+
+    //--------------------------------------------------------------------------
+    // Post your score
+    public void StartPostScore() {
+        mHighScoreBoard.StartPostScore(mName, mLevel, mScore);
+    }
+
+    //--------------------------------------------------------------------------
+    // Get all high scores
+    public void StartGetScore() {
+        mHighScoreBoard.StartGetScore();
     }
 
     //--------------------------------------------------------------------------
