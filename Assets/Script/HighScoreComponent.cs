@@ -59,7 +59,7 @@ public class HighScoreComponent : MonoBehaviour {
         
         if(www.text == "done") {
             //TODO: Hard code
-            GetComponentInParent<GameManager>().RestartGame();
+            GetComponentInParent<GameManager>().ReturnToMainMenu();
         }
         else {
             Debug.Log("There was an error posting the high score" + www.error);

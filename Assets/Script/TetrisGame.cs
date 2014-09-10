@@ -117,9 +117,7 @@ public class TetrisGame {
         mRowsTextLable = GameObject.Find("HUD_Rows").GetComponent<Text>();
         mLevelTextLable = GameObject.Find("HUD_Level").GetComponent<Text>();
         mPausePanel = GameObject.Find("PausePanel");
-        mPausePanel.SetActive(false);
         mGameEndPanel = GameObject.Find("GameEndPanel");
-        mGameEndPanel.SetActive(false);
     }
 
     //--------------------------------------------------------------------------
@@ -133,19 +131,36 @@ public class TetrisGame {
     //--------------------------------------------------------------------------
     public void RestartGame() {
         //Reset all the state
-        mIsGameFinished = false;
+        mPausePanel.SetActive(false);
         mGameEndPanel.SetActive(false);
         PauseGame(false);
+        //Reinit the blocks and spawn the first one
+        Reset();
+        GenerateNextBlockType(); // Get first block type
+        SpawnBlock();
+        RestartBackgroundMusic();
+    }
+
+    //--------------------------------------------------------------------------
+    public void Reset() {
+
+        mIsGameFinished = false;
         mScore = 0;
         mLevel = 0;
         mFinishedRows = 0;
         mSpeed = 0.5f;
         RowsToNextLevel = UnitRowsToNextLevel;
-        //Reinit the blocks and spawn the first one
-        Init();
-        GenerateNextBlockType(); // Get first block type
-        SpawnBlock();
-        RestartBackgroundMusic();
+
+        for (int i = 0; i < MaxBlocksWidth; i++)
+            for (int j = 0; j < MaxBlocksHeight; j++) {
+                mTetrisState[i, j] = false;
+                if (mGameBlockObjects[i,j] != null)
+                    Object.Destroy(mGameBlockObjects[i,j]);
+                mGameBlockObjects[i, j] = null;
+            }
+
+        if (mPreviewBlock != null)  // Destroy the previous preview
+            mPreviewBlock.Destroy();
     }
 
     //--------------------------------------------------------------------------
@@ -156,18 +171,6 @@ public class TetrisGame {
         mGameEndPanel.SetActive(true);
         foreach (GameObject obj in mActiveBlock.mBlockObjects)
             Object.Destroy(obj);
-    }
-
-    //--------------------------------------------------------------------------
-    void Init() {
-
-        for (int i = 0; i < MaxBlocksWidth; i++)
-            for (int j = 0; j < MaxBlocksHeight; j++) {
-                mTetrisState[i, j] = false;
-                if (mGameBlockObjects[i,j] != null)
-                    Object.Destroy(mGameBlockObjects[i,j]);
-                mGameBlockObjects[i, j] = null;
-            }
     }
 
     //--------------------------------------------------------------------------
