@@ -4,7 +4,6 @@
 // 2013.6.29
 //------------------------------------------------------------------------------
 using UnityEngine;
-// using System.Collections;
 
 //------------------------------------------------------------------------------
 // This is class for a Block
@@ -12,11 +11,11 @@ public class Block {
 
     //--------------------------------------------------------------------------
 
-    public int              mSize;          // Side length of container box of block
-    public bool[,]          mBlocks;        // Define the shape of block
-    public Vector3          mPos;           // position
-    public int              mLength;        // This means the number of cube of block
-    public GameObject[]     mBlockObjects;  // To reference the GameObject
+    public int          mSize;         // Side length of container box of block
+    public bool[,]      mBlocks;       // Define the shape of block, [2,3] means 2 rows and 3 columns
+    public Vector3      mPos;          // position, top-left corner
+    public int          mLength;       // This means the number of cube of block
+    public GameObject[] mBlockObjects; // To reference the GameObject
 
     //--------------------------------------------------------------------------
     public void Init(Block blockType, GameObject cubePrefab, Vector3 startPosition, Color col) {
@@ -39,6 +38,7 @@ public class Block {
         }
     }
 
+    //--------------------------------------------------------------------------
     public void Destroy() {
         for (int i = 0; i < mLength; i++) {
             if (mBlockObjects[i] != null)
@@ -47,7 +47,7 @@ public class Block {
     }
     
     //--------------------------------------------------------------------------
-    // Update the position of block
+    // Update the position of block, Drop down 1 block
     public void UpdateBlock() {
 
         // Move the blocks

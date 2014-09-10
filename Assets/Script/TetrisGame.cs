@@ -4,7 +4,6 @@
 // 2014.9.10
 //------------------------------------------------------------------------------
 using UnityEngine;
-using System.Collections;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
@@ -15,21 +14,25 @@ public class TetrisGame {
 
     //--------------------------------------------------------------------------
     //Const
-    const int MaxBlocksWidth  = 10; //max number of blocks horizontally
-    const int MaxBlocksHeight = 22; //max number of blocks vertically
-    const int BlockTypes      = 7;
-    const int UnitRowsToNextLevel = 3;
-    const float mSpeedIncrement = 0.05f; //speed every time increased
+    const int MaxBlocksWidth        = 10; //max number of blocks horizontally
+    const int MaxBlocksHeight       = 22; //max number of blocks vertically
+    const int BlockTypes            = 7;  //how many types of blocks
+    const int UnitRowsToNextLevel   = 3;
+    const float SpeedIncrement      = 0.05f; //speed every time increased
 
     //Player status
-    public int mScore          = 0;
-    public int mFinishedRows   = 0;
-    public int mLevel          = 0;
-    public string mName = "Input your name";
+    int mScore          = 0;
+    int mFinishedRows   = 0;
+    int mLevel          = 0;
+    string mName = "Input your name";
+    public int GetScore()           {return mScore;}
+    public int GetFinishedRows()    {return mFinishedRows;}
+    public int GetLevel()           {return mLevel;}
+    public string GetPlayerName()   {return mName;}
 
     //Game status
     float mSpeed = 0.5f; //time interval of game update - in seconds    //TODO : Change to mTickingTime
-    public bool mIsGameFinished = false;
+    bool mIsGameFinished = false;
     bool mIsGamePaused = false;
     bool mIsFastDropping = false;
     bool mAllowFastDropping = false; //Shouldn't continue fast dropping from next block
@@ -51,10 +54,6 @@ public class TetrisGame {
     Text mScoreTextLable;
     Text mRowsTextLable;
     Text mLevelTextLable;
-    //High Score
-    // Text mHighScoreOrderLabel;
-    // Text mHighScoreNameLabel;
-    // Text mHighScoreScoreLabel;
     //Pause Panel
     GameObject mPausePanel;
     //Game End Panel
@@ -117,18 +116,15 @@ public class TetrisGame {
         mScoreTextLable = GameObject.Find("HUD_Score").GetComponent<Text>();
         mRowsTextLable = GameObject.Find("HUD_Rows").GetComponent<Text>();
         mLevelTextLable = GameObject.Find("HUD_Level").GetComponent<Text>();
-        // mHighScoreOrderLabel = GameObject.Find("HUD_HighScore_Order").GetComponent<Text>();
-        // mHighScoreNameLabel = GameObject.Find("HUD_HighScore_Name").GetComponent<Text>();
-        // mHighScoreScoreLabel = GameObject.Find("HUD_HighScore_Score").GetComponent<Text>();
         mPausePanel = GameObject.Find("PausePanel");
         mPausePanel.SetActive(false);
         mGameEndPanel = GameObject.Find("GameEndPanel");
         mGameEndPanel.SetActive(false);
-
-        // RestartGame();
     }
 
+    //--------------------------------------------------------------------------
     void PauseGame(bool pause) {
+
         mIsGamePaused = pause;
         if (mPausePanel)
             mPausePanel.SetActive(pause);
@@ -139,7 +135,6 @@ public class TetrisGame {
         //Reset all the state
         mIsGameFinished = false;
         mGameEndPanel.SetActive(false);
-        // mIsGamePaused = false;
         PauseGame(false);
         mScore = 0;
         mLevel = 0;
@@ -155,6 +150,7 @@ public class TetrisGame {
 
     //--------------------------------------------------------------------------
     void FinishGame() {
+
         PauseOrResumeBackgroundMusic();
         mIsGameFinished = true;
         mGameEndPanel.SetActive(true);
@@ -234,6 +230,7 @@ public class TetrisGame {
 
     //--------------------------------------------------------------------------
     void PauseOrResumeBackgroundMusic() {
+
         if (mAudioPlayer == null || !mAudioPlayer.enabled)
             return;
         if (mAudioPlayer.isPlaying) {
@@ -246,6 +243,7 @@ public class TetrisGame {
 
     //--------------------------------------------------------------------------
     void RestartBackgroundMusic() {
+
         if (mAudioPlayer == null || !mAudioPlayer.enabled)
             return;
         mAudioPlayer.Stop();
@@ -255,9 +253,10 @@ public class TetrisGame {
     //--------------------------------------------------------------------------
     // Here are all the controls
     public void Update() {
+
+        // Update UI
         UpdateHUD();
         if (Input.GetKeyDown("escape") && !mIsGameFinished) {
-            // mIsGamePaused = !mIsGamePaused;
             PauseGame(!mIsGamePaused);
             PauseOrResumeBackgroundMusic();
         }
@@ -395,7 +394,7 @@ public class TetrisGame {
         if (mFinishedRows > RowsToNextLevel) {
             mLevel++;
             RowsToNextLevel += UnitRowsToNextLevel * (mLevel + 1);
-            mSpeed -= mSpeedIncrement;
+            mSpeed -= SpeedIncrement;
         }
     }
 
