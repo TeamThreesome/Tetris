@@ -52,7 +52,6 @@ public class GameManager : MonoBehaviour {
         mGameStatusPanel.SetActive(true);
         mPausePanel.SetActive(true);
         mGameEndPanel.SetActive(true);
-        mHighScorePanel.SetActive(true);
 
         RestartGame();
         mIsGameStarted = true;
@@ -77,13 +76,25 @@ public class GameManager : MonoBehaviour {
     //--------------------------------------------------------------------------
     public void RestartGame() {
         mTetrisGame.RestartGame();
-        StartGetScore();
     }
 
     //--------------------------------------------------------------------------
     void Update() {
         if (mIsGameStarted)
             mTetrisGame.Update();
+    }
+
+    //--------------------------------------------------------------------------
+    public void OpenHighScore() {
+        StartGetScore();
+        mMainMenu.SetActive(false);
+        mHighScorePanel.SetActive(true);
+    }
+
+    //--------------------------------------------------------------------------
+    public void CloseHighScore() {
+        mMainMenu.SetActive(true);
+        mHighScorePanel.SetActive(false);
     }
 
     //--------------------------------------------------------------------------

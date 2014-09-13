@@ -159,7 +159,10 @@ public class TetrisGame {
                 mGameBlockObjects[i, j] = null;
             }
 
-        if (mPreviewBlock != null)  // Destroy the previous preview
+        if (mActiveBlock != null)
+            mActiveBlock.Destroy();
+
+        if (mPreviewBlock != null)
             mPreviewBlock.Destroy();
     }
 
