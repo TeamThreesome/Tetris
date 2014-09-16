@@ -9,13 +9,14 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 //------------------------------------------------------------------------------
-//Class for implementation of this Tetris game
+// Class for implementation of this Tetris game
+// also it's base class for other game mode
 public class TetrisGame {
 
     //--------------------------------------------------------------------------
     //Const
-    const int MaxBlocksWidth        = 10; //max number of blocks horizontally
-    const int MaxBlocksHeight       = 22; //max number of blocks vertically
+    public const int MaxBlocksWidth        = 10; //max number of blocks horizontally
+    public const int MaxBlocksHeight       = 22; //max number of blocks vertically
     const int BlockTypes            = 7;  //how many types of blocks
     const int UnitRowsToNextLevel   = 3;
     const float SpeedIncrement      = 0.05f; //speed every time increased
@@ -43,11 +44,11 @@ public class TetrisGame {
     //Game content variables
     Block[]         mBlocksData;    //Store the basic info of blocks
     GameObject      mBlockPrefab;   //Prefab of cube
-    bool[,]         mTetrisState = new bool[MaxBlocksWidth, MaxBlocksHeight];
-    GameObject[,]   mGameBlockObjects = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
+    public bool[,]         mTetrisState = new bool[MaxBlocksWidth, MaxBlocksHeight];
+    public GameObject[,]   mGameBlockObjects = new GameObject[MaxBlocksWidth, MaxBlocksHeight]; 
     Vector3         mStartPosition = new Vector3(MaxBlocksWidth/2, MaxBlocksHeight - 1, 0);
     Vector3         mPreviewPosition = new Vector3(MaxBlocksWidth + 5, MaxBlocksHeight - 1, 0);
-    Block           mActiveBlock;   //The moving one block
+    public Block           mActiveBlock;   //The moving one block
     Block           mPreviewBlock;  //The block for preview
 
     //HUD Component
@@ -277,7 +278,7 @@ public class TetrisGame {
 
         //Moving left
         if (Input.GetKeyDown("left") || Input.GetKeyDown("a"))
-            MoveLeft();
+            this.MoveLeft();
         //Holding left
         if (Input.GetKey("left") || Input.GetKey("a")) {
             leftMoveGap += Time.deltaTime;
@@ -285,7 +286,7 @@ public class TetrisGame {
                 leftMoveInterval += Time.deltaTime;
                 if (leftMoveInterval > 0.1 - 0.01 * mLevel) {
                     leftMoveInterval = 0;
-                    MoveLeft();
+                    this.MoveLeft();
                 }
             }
         }
@@ -293,14 +294,14 @@ public class TetrisGame {
             leftMoveGap = 0;
         //Moving right
         if (Input.GetKeyDown("right") || Input.GetKeyDown("d"))
-            MoveRight();
+            this.MoveRight();
         if (Input.GetKey("right") || Input.GetKey("d")) {
             rightMoveGap += Time.deltaTime;
             if (rightMoveGap > 0.2) {
                 rightMoveInterval += Time.deltaTime;
                 if (rightMoveInterval > 0.1 - 0.01 * mLevel) {
                     rightMoveInterval = 0;
-                    MoveRight();
+                    this.MoveRight();
                 }
             }
         }
@@ -429,7 +430,7 @@ public class TetrisGame {
 
     //--------------------------------------------------------------------------
     // The action to try to move the active block left once
-    bool MoveLeft() {
+    public virtual bool MoveLeft() {
 
         bool canMove = true;
         // Check if it can move left
@@ -457,7 +458,7 @@ public class TetrisGame {
     
     //--------------------------------------------------------------------------
     // The action to try to move the active block right once
-    bool MoveRight() {
+    public virtual bool MoveRight() {
 
         bool canMove = true;
         // Check if it can move right
@@ -482,85 +483,7 @@ public class TetrisGame {
         return canMove;
     }
 
-    //--------------------------------------------------------------------------
-    // Mobile Mode : The action to try to move the all blocks left once
-    bool PortRight() {
-
-        // Check if it can move right
-        for (int i = 0; i < mActiveBlock.mLength; i++) {
-            Vector3 pos = mActiveBlock.mBlockObjects[i].transform.position;
-            if (mActiveBlock.mBlockObjects[i].transform.position.x >= MaxBlocksWidth - 1
-                    || mTetrisState[((int)pos.x + 1),(int)pos.y]) {
-                return false;
-            }
-        }
-
-        for (int h = 0; h < MaxBlocksHeight; ++h) {
-            bool firstState = mTetrisState[0, h];
-            for (int w = 0; w < MaxBlocksWidth - 1; ++w) {
-                mTetrisState[w, h] = mTetrisState[w+1, h];
-            }
-            mTetrisState[MaxBlocksWidth-1, h] = firstState;
-        }
-
-        for (int h = 0; h < MaxBlocksHeight; ++h) {
-            GameObject firstObject = mGameBlockObjects[0, h];
-            for (int w = 0; w < MaxBlocksWidth - 1; ++w) {
-                mGameBlockObjects[w, h] = mGameBlockObjects[w + 1, h];
-                if (mGameBlockObjects[w, h] != null) {
-                    Vector3 pos = mGameBlockObjects[w, h].transform.position;
-                    mGameBlockObjects[w, h].transform.position = new Vector3(pos.x - 1, pos.y, pos.z);
-                }
-            }
-            mGameBlockObjects[MaxBlocksWidth - 1, h] = firstObject;
-            if (mGameBlockObjects[MaxBlocksWidth - 1, h] != null) {
-                Vector3 pos = mGameBlockObjects[MaxBlocksWidth - 1, h].transform.position;
-                mGameBlockObjects[MaxBlocksWidth - 1, h].transform.position = new Vector3(pos.x - 1 + MaxBlocksWidth, pos.y, pos.z);
-            }
-        }
-
-        return true;
-    }
     
-    //--------------------------------------------------------------------------
-    // Mobile Mode : The action to try to move the all blocks right once
-    bool PortLeft() {
-
-        // Check if it can move left
-        for (int i = 0; i < mActiveBlock.mLength; i++) {
-            Vector3 blockPos = mActiveBlock.mBlockObjects[i].transform.position;
-            if (mActiveBlock.mBlockObjects[i].transform.position.x <= 0
-                    || mTetrisState[((int)blockPos.x - 1), (int)blockPos.y]) {
-                return false;
-            }
-        }
-
-        for (int h = 0; h < MaxBlocksHeight; ++h) {
-            bool lastState = mTetrisState[MaxBlocksWidth - 1, h];
-            for (int w = MaxBlocksWidth - 1; w > 0; w--) {
-                mTetrisState[w, h] = mTetrisState[w - 1, h];
-            }
-            mTetrisState[0, h] = lastState;
-        }
-
-        for (int h = 0; h < MaxBlocksHeight; ++h) {
-            GameObject lastObject = mGameBlockObjects[MaxBlocksWidth - 1, h];
-            for (int w = MaxBlocksWidth - 1; w > 0; w--) {
-                mGameBlockObjects[w, h] = mGameBlockObjects[w - 1, h];
-                if (mGameBlockObjects[w, h] != null) {
-                    Vector3 pos = mGameBlockObjects[w, h].transform.position;
-                    mGameBlockObjects[w, h].transform.position = new Vector3(pos.x + 1, pos.y, pos.z);
-                }
-            }
-            mGameBlockObjects[0, h] = lastObject;
-            if (mGameBlockObjects[0, h] != null) {
-                Vector3 pos = mGameBlockObjects[0, h].transform.position;
-                mGameBlockObjects[0, h].transform.position = new Vector3(pos.x + 1 - MaxBlocksWidth, pos.y, pos.z);
-            }
-        }
-
-        return true;
-    }
 
     //--------------------------------------------------------------------------
     // Rotate the Block
